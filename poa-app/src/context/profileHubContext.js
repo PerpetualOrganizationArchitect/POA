@@ -29,47 +29,76 @@ export const ProfileHubProvider = ({ children }) => {
 
 
 
-    const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL;
+    // POP subgraph on Hoodi testnet
+    const SUBGRAPH_URL = process.env.NEXT_PUBLIC_SUBGRAPH_URL ||
+        'https://api.studio.thegraph.com/query/73367/poa-2/version/latest';
 
     async function querySubgraph(query) {
-        const response = await fetch(SUBGRAPH_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ query }),
-        });
+        try {
+            console.log('Fetching from subgraph:', SUBGRAPH_URL);
+            const response = await fetch(SUBGRAPH_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query }),
+            });
 
-        const data = await response.json();
+            if (!response.ok) {
+                console.error('Subgraph request failed:', response.status, response.statusText);
+                return null;
+            }
 
-        if (data.errors) {
-            console.error('Error fetching data:', data.errors);
+            const data = await response.json();
+
+            if (data.errors) {
+                console.error('Subgraph query errors:', data.errors);
+                return null;
+            }
+
+            return data.data;
+        } catch (error) {
+            console.error('Error querying subgraph:', error);
             return null;
         }
-
-        return data.data;
     }
 
     async function fetchPOs() {
-
+        // Updated for POP subgraph schema (Hoodi testnet)
         const query = `
         {
-        perpetualOrganizations {
+          organizations(first: 100, orderBy: deployedAt, orderDirection: desc) {
+            id
+            name
+            metadataHash
+            deployedAt
+            participationToken {
               id
-              logoHash
-              totalMembers
-              aboutInfo{
-                description
-                links{
-                    name
-                    url
-                }
-              }
-              }
-            }`;
+              totalSupply
+            }
+            quickJoin {
+              id
+            }
+            users {
+              id
+            }
+          }
+        }`;
 
         const data = await querySubgraph(query);
-        return data?.perpetualOrganizations;
+
+        // Transform to match old structure expected by browser page
+        const orgs = data?.organizations || [];
+        return orgs.map(org => ({
+            id: org.name || org.id, // Use name as display ID, fallback to bytes ID
+            orgId: org.id, // Keep original bytes ID for navigation
+            logoHash: org.metadataHash, // Will need IPFS fetch to get actual logo
+            totalMembers: org.users?.length || 0,
+            aboutInfo: null, // Not available in new schema - would need IPFS fetch
+            deployedAt: org.deployedAt,
+            quickJoinContract: org.quickJoin?.id,
+            participationToken: org.participationToken
+        }));
     }
 
 

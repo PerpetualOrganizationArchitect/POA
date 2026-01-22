@@ -13,7 +13,6 @@ import {
   Flex,
 } from '@chakra-ui/react';
 import { usePOContext } from '@/context/POContext';
-import { useWeb3Context } from '@/context/web3Context';
 
 const ExecutivePage = () => {
   const {
@@ -21,35 +20,27 @@ const ExecutivePage = () => {
     loading,
     error,
     poContextLoading,
-    nftMembershipContractAddress,
+    roleHatIds,
   } = usePOContext();
   const [executives, setExecutives] = useState([]);
   const [loadingExecs, setLoadingExecs] = useState(true);
   const [addressToMint, setAddressToMint] = useState('');
   const [mintLoading, setMintLoading] = useState(false);
   const toast = useToast();
-  const { updateNFT } = useWeb3Context();
 
   useEffect(() => {
-    // Fetch list of executives
+    // In POP, executives are users who hold the executive hat (typically roleHatIds[1])
     const fetchExecutives = async () => {
       try {
         setLoadingExecs(true);
-        
-        
-        
-        if (leaderboardData) {
-            
+
+        if (leaderboardData && roleHatIds?.length > 1) {
+          const execHatId = roleHatIds[1]; // Second role hat is typically executive
           const execs = leaderboardData.filter((user) => {
-            
-            
-            return (
-              user.type &&
-              user.type === 'Executive'
-            );
+            return user.hatIds?.includes(execHatId);
           }).map((user) => ({
             id: user.id,
-            address: user.id,
+            address: user.address,
             name: user.name || 'Unknown',
           }));
           setExecutives(execs);
@@ -64,12 +55,22 @@ const ExecutivePage = () => {
     };
 
     if (leaderboardData && !loading) {
-        
       fetchExecutives();
     }
-  }, [leaderboardData, loading]);
+  }, [leaderboardData, loading, roleHatIds]);
 
   const handleMintNFT = async () => {
+    // In POP, minting executive role requires using Hats Protocol
+    // This functionality needs to be implemented via the Executor contract
+    toast({
+      title: 'Not Implemented',
+      description: 'Minting executive hats requires Hats Protocol integration via governance proposal',
+      status: 'info',
+      duration: 5000,
+      isClosable: true,
+    });
+    return;
+
     if (!addressToMint) {
       toast({
         title: 'Address required',
@@ -82,11 +83,10 @@ const ExecutivePage = () => {
     }
     setMintLoading(true);
     try {
-      const membershipType = 'Executive';
-      await updateNFT(nftMembershipContractAddress, addressToMint, membershipType);
+      // TODO: Implement Hats minting via governance proposal
       toast({
         title: 'Success',
-        description: `Executive NFT minted for ${addressToMint}`,
+        description: `Executive role granted to ${addressToMint}`,
         status: 'success',
         duration: 3000,
         isClosable: true,

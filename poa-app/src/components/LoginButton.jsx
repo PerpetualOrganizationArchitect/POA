@@ -6,7 +6,7 @@ import { useUserContext } from '@/context/UserContext';
 
 const LoginButton = () => {
 
-    const { address, hasMemberNFT} = useUserContext();
+    const { address, hasMemberRole} = useUserContext();
     
     const router = useRouter();
     const { userDAO } = router.query;
@@ -20,14 +20,14 @@ const LoginButton = () => {
     // Effect to set text based on accounts, only runs on client side after mount
     useEffect(() => {
 
-        if (hasMemberNFT) {
+        if (hasMemberRole) {
             setText("Profile Hub");
             setRoute("profileHub");
         } else {
-          
+
             setText("Join or Connect");
         }
-    }, [hasMemberNFT, address]);
+    }, [hasMemberRole, address]);
 
 
     return (

@@ -76,9 +76,9 @@ const OngoingPolls = ({OngoingPolls}) => {
                                 <Link2  href={`/voting/?poll=${poll.id}&userDAO=${userDAO}`}>
                                 <VStack textColor="white"  spacing={2}>
 
-                                    <Heading  ml={4} fontWeight="extrabold" mt={2} size="sm">{poll.name}</Heading>
-                                    
-                                    <Box pl="4" mt="0"><CountDown duration={calculateRemainingTime(poll?.experationTimestamp)}/></Box>
+                                    <Heading  ml={4} fontWeight="extrabold" mt={2} size="sm">{poll.title}</Heading>
+
+                                    <Box pl="4" mt="0"><CountDown duration={calculateRemainingTime(poll?.endTimestamp)}/></Box>
                                     <Box alignSelf={"flex-start"} ml="4" mt="0">
                                         <Badge colorScheme="blue">{poll.type}</Badge>
                                     </Box>

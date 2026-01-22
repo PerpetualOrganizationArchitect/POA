@@ -14,53 +14,25 @@ import {
   useToast
 } from '@chakra-ui/react';
 
-import { useWeb3Context } from "@/context/web3Context";
 import { usePOContext } from '@/context/POContext';
 
 const ExecutiveMenuModal = ({ isOpen, onClose }) => {
   const [addressToMint, setAddressToMint] = useState('');
   const [loading, setLoading] = useState(false);
-  const { updateNFT } = useWeb3Context();
   const toast = useToast();
-
-    const {nftMembershipContractAddress} = usePOContext();
+  const { roleHatIds } = usePOContext();
 
   const handleMintNFT = async () => {
-    if (!addressToMint) {
-      toast({
-        title: "Address required",
-        description: "Please enter a valid address",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-    setLoading(true);
-    try {
-      
-      const membershipType = "Executive"; 
-      await updateNFT(nftMembershipContractAddress, addressToMint, membershipType);
-      toast({
-        title: "Success",
-        description: `NFT minted for ${addressToMint}`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.error("Error minting NFT:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mint NFT. See console for details.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setLoading(false);
-      setAddressToMint(''); 
-    }
+    // In POP, executive role is granted via Hats Protocol
+    // This requires a governance proposal to mint hats to users
+    toast({
+      title: "Not Implemented",
+      description: "Granting executive role requires a governance proposal to mint hats via Hats Protocol",
+      status: "info",
+      duration: 5000,
+      isClosable: true,
+    });
+    return;
   };
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -71,8 +43,12 @@ const ExecutiveMenuModal = ({ isOpen, onClose }) => {
         <ModalBody>
           <VStack spacing={4}>
             {/* Input for address */}
+            <Text fontSize="sm" color="gray.600">
+              In POP, executive roles are managed via Hats Protocol.
+              To grant executive access, create a governance proposal.
+            </Text>
             <Input
-              placeholder="Enter Address to Mint Executive NFT"
+              placeholder="Enter Address for Executive Role"
               value={addressToMint}
               onChange={(e) => setAddressToMint(e.target.value)}
               isDisabled={loading}
@@ -86,7 +62,7 @@ const ExecutiveMenuModal = ({ isOpen, onClose }) => {
             onClick={handleMintNFT}
             isLoading={loading}
           >
-            Mint Executive NFT
+            Grant Executive Role
           </Button>
           <Button variant="ghost" onClick={onClose}>Close</Button>
         </ModalFooter>

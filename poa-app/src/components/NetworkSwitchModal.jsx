@@ -29,17 +29,12 @@ const NetworkSwitchModal = ({ isOpen, onClose }) => {
         <ModalContent zIndex="1500">
           <ModalHeader>Wrong Network</ModalHeader>
           <ModalBody >
-            <Text fontSize={"lg"} mb="4">Please switch  to the Polygon Amoy network to continue and then try again.</Text>
-            <Text>If you need testnet tokens get them from the faucet here: </Text>
-            <Link href="https://faucet.polygon.technology/" passHref>
-              <ChakraLink href="https://faucet.polygon.technology/" isExternal color="blue.500" textDecoration="underline">
-                https://faucet.polygon.technology/
-              </ChakraLink>
-            </Link>
+            <Text fontSize={"lg"} mb="4">Please switch to the Hoodi testnet to continue and then try again.</Text>
+            <Text>If you need testnet ETH, get it from a Hoodi faucet.</Text>
           </ModalBody>
           <ModalFooter>
             <Button colorScheme="blue" onClick={handleNetworkSwitch}>
-              Switch to Polygon Amoy
+              Switch to Hoodi
             </Button>
           </ModalFooter>
         </ModalContent>

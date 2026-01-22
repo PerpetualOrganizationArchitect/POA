@@ -1,0 +1,129 @@
+name: Deploy to IPFS via Pinata
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '20'
+  WORKING_DIRECTORY: poa-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          cache-dependency-path: ${{ env.WORKING_DIRECTORY }}/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: yarn install --frozen-lockfile
+
+      - name: Build static site
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: yarn build
+
+      - name: Upload to Pinata
+        id: pinata
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        env:
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+          PINATA_GATEWAY: ${{ secrets.PINATA_GATEWAY }}
+        run: |
+          yarn add pinata
+
+          node << 'EOF'
+          const { PinataSDK } = require("pinata");
+          const fs = require("fs");
+          const path = require("path");
+
+          async function uploadDirectory() {
+            const pinata = new PinataSDK({
+              pinataJwt: process.env.PINATA_JWT,
+              pinataGateway: process.env.PINATA_GATEWAY,
+            });
+
+            const outDir = "./out";
+
+            // Collect all files from the out directory
+            function getAllFiles(dir, baseDir = dir) {
+              const files = [];
+              const items = fs.readdirSync(dir);
+
+              for (const item of items) {
+                const fullPath = path.join(dir, item);
+                const stat = fs.statSync(fullPath);
+
+                if (stat.isDirectory()) {
+                  files.push(...getAllFiles(fullPath, baseDir));
+                } else {
+                  const relativePath = path.relative(baseDir, fullPath);
+                  files.push({ path: relativePath, fullPath });
+                }
+              }
+              return files;
+            }
+
+            const files = getAllFiles(outDir);
+            console.log(`Found ${files.length} files to upload`);
+
+            // Create File objects for upload
+            const fileObjects = files.map(({ path: relativePath, fullPath }) => {
+              const content = fs.readFileSync(fullPath);
+              return new File([content], relativePath);
+            });
+
+            // Upload as a folder
+            const upload = await pinata.upload.public.fileArray(fileObjects);
+
+            console.log("Upload successful!");
+            console.log(`CID: ${upload.cid}`);
+
+            // Write outputs for GitHub Actions
+            const outputFile = process.env.GITHUB_OUTPUT;
+            fs.appendFileSync(outputFile, `ipfs_hash=${upload.cid}\n`);
+          }
+
+          uploadDirectory().catch(err => {
+            console.error("Upload failed:", err);
+            process.exit(1);
+          });
+          EOF
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Update wrangler.toml with new CID
+        env:
+          SITE_CID: ${{ steps.pinata.outputs.ipfs_hash }}
+        run: |
+          sed -i "s/SITE_CID = \"placeholder\"/SITE_CID = \"$SITE_CID\"/" wrangler.toml
+          echo "Updated wrangler.toml with CID: ${SITE_CID}"
+          cat wrangler.toml
+
+      - name: Deploy Cloudflare Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          wrangler deploy
+          echo "Worker deployed with CID: ${{ steps.pinata.outputs.ipfs_hash }}"
+
+      - name: Deployment Summary
+        run: |
+          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**IPFS CID:** \`${{ steps.pinata.outputs.ipfs_hash }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Preview URLs:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Gateway: https://${{ secrets.PINATA_GATEWAY }}/ipfs/${{ steps.pinata.outputs.ipfs_hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Production: https://poa.earth" >> $GITHUB_STEP_SUMMARY

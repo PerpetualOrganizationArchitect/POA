@@ -18,7 +18,6 @@ import {
   Wrap,
   WrapItem,
 } from '@chakra-ui/react';
-import { useWeb3Context } from '@/context/web3Context';
 import { useVotingContext } from '@/context/VotingContext';
 import { usePOContext } from '@/context/POContext';
 import { useProjectContext } from '@/context/ProjectContext';
@@ -30,45 +29,46 @@ import Navbar from "@/templateComponents/studentOrgDAO/NavBar";
 import { FaLink } from 'react-icons/fa';
 import { useIPFScontext } from "@/context/ipfsContext";
 
-function generateAbbreviatedConstitution(poData) {
+function generateOrgStructurePreview(poData, roleCount) {
   const {
     HybridVoting = null,
     DirectDemocracyVoting = null,
-    ParticipationVoting = null,
-    NFTMembership = null,
-    Treasury = null
   } = poData;
 
   let descriptions = [];
 
-  const addVotingSystemDescription = (name, system) => {
-    if (system) {
-      descriptions.push(<Text key={name} ml="2">{name}: {system.quorum}% approval</Text>);
-    }
-  };
+  // Roles summary
+  descriptions.push(
+    <Text fontWeight="bold" fontSize="lg" key="roles-header" ml="2" mt="2">
+      Roles
+    </Text>
+  );
+  descriptions.push(
+    <Text key="role-count" ml="2" mt="1">
+      {roleCount > 0 ? `${roleCount} roles defined` : 'Roles loading...'}
+    </Text>
+  );
 
-  descriptions.push(<Text fontWeight="bold" fontSize="lg" key="voting-types" ml="2" mt="2">Voting Types</Text>);
-  addVotingSystemDescription("Hybrid Voting", HybridVoting);
-  addVotingSystemDescription("Direct Democracy Voting", DirectDemocracyVoting);
-  addVotingSystemDescription("Participation Voting", ParticipationVoting);
+  // Voting summary
+  descriptions.push(
+    <Text fontWeight="bold" fontSize="lg" key="governance-header" ml="2" mt="3">
+      Governance
+    </Text>
+  );
 
-  if (NFTMembership) {
-    descriptions.push(<Text fontWeight={"bold"} fontSize={"lg"} key="member-types" ml="2" mt="2">Member Types</Text>);
-    descriptions.push(<Text key="member-type-names" ml="2" mt="2">All Member Types: {NFTMembership.memberTypeNames.join(', ')}</Text>);
-    descriptions.push(<Text key="executive-roles" ml="2" mt="0">Executive Roles: {NFTMembership.executiveRoles.join(', ')}</Text>);
+  if (HybridVoting) {
+    descriptions.push(
+      <Text key="hybrid" ml="2" mt="1">
+        Hybrid Voting: {HybridVoting.quorum}% quorum
+      </Text>
+    );
   }
-
-  if (Treasury) {
-    let treasuryControl = "an unidentified voting system";
-    if (HybridVoting && Treasury.votingContract === HybridVoting.id) {
-      treasuryControl = "Hybrid Voting";
-    } else if (DirectDemocracyVoting && Treasury.votingContract === DirectDemocracyVoting.id) {
-      treasuryControl = "Direct Democracy Voting";
-    } else if (ParticipationVoting && Treasury.votingContract === ParticipationVoting.id) {
-      treasuryControl = "Participation Voting";
-    }
-    descriptions.push(<Text fontSize={"lg"} fontWeight={"bold"} key="treasury-control-Text" ml="2" mt="2">Treasury and Upgrade Control</Text>);
-    descriptions.push(<Text key="treasury-control" ml="2" mt="2">Controlled by: {treasuryControl}</Text>);
+  if (DirectDemocracyVoting) {
+    descriptions.push(
+      <Text key="dd" ml="2" mt="1">
+        Direct Democracy: {DirectDemocracyVoting.quorum}% quorum
+      </Text>
+    );
   }
 
   return descriptions;
@@ -77,13 +77,13 @@ function generateAbbreviatedConstitution(poData) {
 const PerpetualOrgDashboard = () => {
   const { ongoingPolls } = useVotingContext();
   console.log("ongoingPolls", ongoingPolls);
-  const { poContextLoading, poDescription, poLinks, logoHash, activeTaskAmount, completedTaskAmount, ptTokenBalance, poMembers, rules, educationModules } = usePOContext();
+  const { poContextLoading, poDescription, poLinks, logoHash, activeTaskAmount, completedTaskAmount, ptTokenBalance, poMembers, rules, educationModules, roleHatIds, educationHubEnabled } = usePOContext();
 
   const router = useRouter();
   const { userDAO } = router.query;
   const [imageURL, setImageURL] = useState({});
   const [imageFetched, setImageFetched] = useState(false);
-  const [constitutionElements, setConstitutionElements] = useState([]);
+  const [orgStructurePreview, setOrgStructurePreview] = useState([]);
   const { fetchImageFromIpfs } = useIPFScontext();
 
   // Responsive design breakpoints
@@ -107,11 +107,11 @@ const PerpetualOrgDashboard = () => {
 
   useEffect(() => {
     if (rules) {
-      setConstitutionElements(generateAbbreviatedConstitution(rules));
+      setOrgStructurePreview(generateOrgStructurePreview(rules, roleHatIds?.length || 0));
     }
-  }, [rules]);
+  }, [rules, roleHatIds]);
 
-  const { leaderboardData } = usePOContext();
+  const { leaderboardDisplayData } = usePOContext();
   const { recommendedTasks } = useProjectContext();
 
   const getMedalColor = (rank) => {
@@ -156,20 +156,31 @@ const PerpetualOrgDashboard = () => {
             <Grid
               color="whitesmoke"
               templateAreas={{
-                base: `
+                base: educationHubEnabled ? `
                   'orgInfo'
                   'orgStats'
                   'tasks'
                   'polls'
                   'leaderboard'
-                  'constitution'
+                  'orgStructure'
                   'learnAndEarn'
+                ` : `
+                  'orgInfo'
+                  'orgStats'
+                  'tasks'
+                  'polls'
+                  'leaderboard'
+                  'orgStructure'
                 `,
-                md: `
+                md: educationHubEnabled ? `
                   'orgInfo orgStats'
                   'tasks polls'
-                  'leaderboard constitution'
+                  'leaderboard orgStructure'
                   'learnAndEarn learnAndEarn'
+                ` : `
+                  'orgInfo orgStats'
+                  'tasks polls'
+                  'leaderboard orgStructure'
                 `,
               }}
               templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
@@ -348,14 +359,10 @@ const PerpetualOrgDashboard = () => {
                       <Link2 href={`/tasks/?task=${task.id}&projectId=${encodeURIComponent(decodeURIComponent(task.projectId))}&userDAO=${userDAO}`}>
                         <VStack textColor="white" align="stretch" spacing={3}>
                           <Text mt="-2" fontSize={textSize} lineHeight="99%" fontWeight="extrabold">
-                            {task.isIndexing ? 'Indexing...' : task.taskInfo?.name}
+                            {task.isIndexing ? 'Indexing...' : task.title}
                           </Text>
                           <HStack justify="space-between">
-                            {task.isIndexing ? (
-                              <Badge colorScheme="purple">Indexing from IPFS</Badge>
-                            ) : (
-                              <Badge colorScheme={difficultyColorScheme[task.taskInfo?.difficulty?.toLowerCase().replace(" ", "")]}>{task.taskInfo?.difficulty}</Badge>
-                            )}
+                            <Badge colorScheme="purple">{task.status}</Badge>
                             <Text fontWeight="bold">{task.payout} Tokens</Text>
                           </HStack>
                         </VStack>
@@ -410,8 +417,8 @@ const PerpetualOrgDashboard = () => {
                     </Text>
                   </VStack>
                   <Box p={{ base: 2, md: 4 }}>
-                    {Array.isArray(leaderboardData) && leaderboardData.length > 0 ? (
-                      leaderboardData.slice(0, 5).map((entry, index) => {
+                    {Array.isArray(leaderboardDisplayData) && leaderboardDisplayData.length > 0 ? (
+                      leaderboardDisplayData.slice(0, 5).map((entry, index) => {
                         const medalColor = getMedalColor(index);
                         return (
                           <HStack 
@@ -436,7 +443,7 @@ const PerpetualOrgDashboard = () => {
               </Link2>
             </GridItem>
 
-            <GridItem area={'constitution'}>
+            <GridItem area={'orgStructure'}>
               <Box
                 w="100%"
                 borderRadius="2xl"
@@ -449,90 +456,91 @@ const PerpetualOrgDashboard = () => {
                 <VStack pb={1} align="flex-start" position="relative" borderTopRadius="2xl">
                   <div style={glassLayerStyle} />
                   <Text pl={{ base: 3, md: 6 }} fontWeight="bold" fontSize={sectionHeadingSize}>
-                    Constitution
+                    Org Structure
                   </Text>
                 </VStack>
                 <Box pl={{ base: 3, md: 6 }} pr={{ base: 3, md: 6 }} pb={4}>
-                  {constitutionElements}
+                  {orgStructurePreview}
                   <HStack mt="2" spacing={4} align="center">
-                    <Link2 href={`/constitution?userDAO=${userDAO}`}>
+                    <Link2 href={`/org-structure?userDAO=${userDAO}`}>
                       <Button
                         mt={2}
-                        colorScheme="teal"
+                        colorScheme="purple"
                         size={{ base: "xs", md: "sm" }}
                         ml="2"
                       >
-                        View Full Constitution
+                        View Full Structure
                       </Button>
                     </Link2>
-
                   </HStack>
                 </Box>
               </Box>
             </GridItem>
-            <GridItem area={'learnAndEarn'}>
-            <Box
-              h="100%"
-              w="100%"
-              borderRadius="2xl"
-              bg="transparent"
-              boxShadow="lg"
-              position="relative"
-              zIndex={2}
-            >
-              <div style={glassLayerStyle} />
-              <VStack pb={1} align="flex-start" position="relative" borderTopRadius="2xl">
-                <div style={glassLayerStyle} />
-                <Text pl={{ base: 3, md: 6 }} fontWeight="bold" fontSize={sectionHeadingSize}>
-                  Learn and Earn
-                </Text>
-              </VStack>
-              <Box p={{ base: 2, md: 4 }}>
-                {educationModules && educationModules.length > 0 ? (
-                  <Flex 
-                    direction={{ base: "column", md: "row" }}
-                    spacing={4} 
-                    gap={3} 
-                    align="flex-start"
-                  >
-                    {educationModules.slice(0,3).map((module) => (
-                      <Box
-                        key={module.id}
-                        w={{ base: "100%", md: "33%" }}
-                        h="auto"
-                        p={4}
-                        borderRadius="xl"
-                        onClick={() => router.push(`/edu-Hub`)}
-                        bg="black"
-                        _hover={{ boxShadow: "md", transform: "scale(1.02)" }}
-                        mb={{ base: 2, md: 0 }}
+            {educationHubEnabled && (
+              <GridItem area={'learnAndEarn'}>
+                <Box
+                  h="100%"
+                  w="100%"
+                  borderRadius="2xl"
+                  bg="transparent"
+                  boxShadow="lg"
+                  position="relative"
+                  zIndex={2}
+                >
+                  <div style={glassLayerStyle} />
+                  <VStack pb={1} align="flex-start" position="relative" borderTopRadius="2xl">
+                    <div style={glassLayerStyle} />
+                    <Text pl={{ base: 3, md: 6 }} fontWeight="bold" fontSize={sectionHeadingSize}>
+                      Learn and Earn
+                    </Text>
+                  </VStack>
+                  <Box p={{ base: 2, md: 4 }}>
+                    {educationModules && educationModules.length > 0 ? (
+                      <Flex
+                        direction={{ base: "column", md: "row" }}
+                        spacing={4}
+                        gap={3}
+                        align="flex-start"
                       >
-                        
-                          <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">
-                            {module.isIndexing ? 'Indexing...' : module.name}
-                          </Text>
-                          <HStack mt={6} justifyContent="space-between">
-                        {/* <Text mt={2}>{module.description}</Text> */}
-                        <Link2 href={`/edu-Hub`}>
-                          
-                          <Button colorScheme="teal" size={{ base: "xs", md: "sm" }}>
-                            {module.isIndexing ? 'Coming Soon' : 'Start Module'}
-                          </Button>
-                          
-                        </Link2>
-                        <Badge fontSize={{ base: "md", md: "lg" }} colorScheme="teal">{module.payout} Tokens</Badge>
-                        </HStack>
-                      </Box>
-                    ))}
-                  </Flex>
-                ) : (
-                  <Text pl={{ base: 3, md: 6 }} fontSize={textSize} mt={2}>
-                    No modules available at this time.
-                  </Text>
-                )}
-              </Box>
-            </Box>
-          </GridItem>
+                        {educationModules.slice(0,3).map((module) => (
+                          <Box
+                            key={module.id}
+                            w={{ base: "100%", md: "33%" }}
+                            h="auto"
+                            p={4}
+                            borderRadius="xl"
+                            onClick={() => router.push(`/edu-Hub`)}
+                            bg="black"
+                            _hover={{ boxShadow: "md", transform: "scale(1.02)" }}
+                            mb={{ base: 2, md: 0 }}
+                          >
+
+                              <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold">
+                                {module.isIndexing ? 'Indexing...' : module.name}
+                              </Text>
+                              <HStack mt={6} justifyContent="space-between">
+                            {/* <Text mt={2}>{module.description}</Text> */}
+                            <Link2 href={`/edu-Hub`}>
+
+                              <Button colorScheme="teal" size={{ base: "xs", md: "sm" }}>
+                                {module.isIndexing ? 'Coming Soon' : 'Start Module'}
+                              </Button>
+
+                            </Link2>
+                            <Badge fontSize={{ base: "md", md: "lg" }} colorScheme="teal">{module.payout} Tokens</Badge>
+                            </HStack>
+                          </Box>
+                        ))}
+                      </Flex>
+                    ) : (
+                      <Text pl={{ base: 3, md: 6 }} fontSize={textSize} mt={2}>
+                        No modules available at this time.
+                      </Text>
+                    )}
+                  </Box>
+                </Box>
+              </GridItem>
+            )}
           </Grid>
         </Box>
       )}

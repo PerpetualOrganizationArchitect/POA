@@ -1,9 +1,0 @@
-{
-  perpetualOrganization(id: "Test Org") {
-    ParticipationVoting {
-      proposals(orderBy: experationTimestamp, orderDirection: desc, where: {winningOptionIndex_not: null}) {
-        id
-      }
-    }
-  }
-}

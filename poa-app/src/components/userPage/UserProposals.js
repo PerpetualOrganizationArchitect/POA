@@ -60,10 +60,10 @@ const UserProposals = ({ userProposals }) => {
                     <Link2  href={`/voting/?poll=${proposal.id}&userDAO=${userDAO}`}>
                         <VStack textColor="white" spacing={2}>
                             <Heading ml={4} fontWeight="extrabold" mt={2} size="sm">
-                                {proposal.name}
+                                {proposal.title}
                             </Heading>
                             <Box pl="4" mt="0">
-                                <CountDown duration={calculateRemainingTime(proposal.experationTimestamp)} />
+                                <CountDown duration={calculateRemainingTime(proposal.endTimestamp)} />
                             </Box>
                             <Box alignSelf={"flex-start"} ml="4" mt="0">
                                 <Badge colorScheme="blue">{proposal.type}</Badge>

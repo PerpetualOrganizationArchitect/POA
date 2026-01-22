@@ -16,12 +16,15 @@ import {
   Badge,
   Spinner,
   Center,
-  Button
+  Button,
+  useDisclosure,
+  Collapse,
+  Skeleton,
+  Circle,
 } from '@chakra-ui/react';
-import { SettingsIcon } from '@chakra-ui/icons';
+import { SettingsIcon, AddIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import AccountSettingsModal from '@/components/userPage/AccountSettingsModal';
-import { useWeb3Context } from '@/context/web3Context';
 import { useVotingContext } from '@/context/VotingContext';
 import { useUserContext } from '@/context/UserContext';
 import { useProjectContext } from '@/context/ProjectContext';
@@ -32,6 +35,76 @@ import UserProposals from '@/components/userPage/UserProposals';
 import { useRouter } from 'next/router';
 import Navbar from "@/templateComponents/studentOrgDAO/NavBar";
 import ExecutiveMenuModal from '@/components/profileHub/ExecutiveMenuModal';
+import { useOrgStructure } from '@/hooks';
+import WelcomeClaimPage from '@/components/profileHub/WelcomeClaimPage';
+import { TokenRequestModal, PendingRequestsPanel, UserRequestHistory } from '@/components/tokenRequest';
+
+/**
+ * Skeleton loader for WelcomeClaimPage - prevents layout shift during initial load
+ * Matches the exact dimensions and structure of the real component
+ */
+function WelcomePageSkeleton() {
+  return (
+    <>
+      <Navbar />
+      <Box
+        minH="calc(100vh - 80px)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        p={4}
+      >
+        <Box
+          maxW="600px"
+          w="100%"
+          borderRadius="2xl"
+          bg="rgba(0, 0, 0, 0.73)"
+          backdropFilter="blur(20px)"
+          overflow="hidden"
+          boxShadow="2xl"
+        >
+          {/* Step indicator skeleton */}
+          <HStack
+            px={6}
+            py={3}
+            borderBottom="1px solid"
+            borderColor="whiteAlpha.100"
+          >
+            <Skeleton height="24px" width="24px" borderRadius="full" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+            <Skeleton height="16px" width="120px" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+          </HStack>
+
+          {/* Content skeleton */}
+          <VStack spacing={6} p={8} align="center">
+            {/* Logo placeholder */}
+            <Skeleton height="100px" width="100px" borderRadius="2xl" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+
+            {/* Title placeholder */}
+            <Skeleton height="36px" width="280px" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+
+            {/* Description placeholder */}
+            <Skeleton height="20px" width="320px" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+
+            {/* Divider placeholder */}
+            <Skeleton height="2px" width="60px" startColor="purple.400" endColor="purple.600" />
+
+            {/* Instruction placeholder */}
+            <Skeleton height="24px" width="220px" startColor="whiteAlpha.100" endColor="whiteAlpha.300" />
+
+            {/* Role cards placeholders */}
+            <VStack w="100%" spacing={3}>
+              <Skeleton height="80px" width="100%" borderRadius="xl" startColor="whiteAlpha.50" endColor="whiteAlpha.200" />
+              <Skeleton height="80px" width="100%" borderRadius="xl" startColor="whiteAlpha.50" endColor="whiteAlpha.200" />
+            </VStack>
+
+            {/* Footer hint placeholder */}
+            <Skeleton height="16px" width="260px" startColor="whiteAlpha.100" endColor="whiteAlpha.200" />
+          </VStack>
+        </Box>
+      </Box>
+    </>
+  );
+}
 
 const UserprofileHub = () => {
 
@@ -41,8 +114,13 @@ const UserprofileHub = () => {
   const { ongoingPolls,} = useVotingContext();
   const {recommendedTasks} = useProjectContext();
 
-  const {claimedTasks,  userProposals,graphUsername, userDataLoading, error, userData} = useUserContext();
+  const {claimedTasks, userProposals, graphUsername, userDataLoading, error, userData, hasExecRole, hasMemberRole, hasApproverRole} = useUserContext();
 
+  // Fetch org structure for claim page
+  const { roles, eligibilityModuleAddress, orgName, orgMetadata, loading: orgLoading } = useOrgStructure();
+  // Show all roles in the welcome flow - defaultEligible just means self-claimable
+  // Users can still see roles that require vouching/admin approval
+  const claimableRoles = roles || [];
 
   const prefersReducedMotion = usePrefersReducedMotion();
   const [countFinished, setCountFinished] = useState(false);
@@ -54,6 +132,11 @@ const UserprofileHub = () => {
   const [isExecutiveMenuOpen, setExecutiveMenuOpen] = useState(false);
   const openExecutiveMenu = () => setExecutiveMenuOpen(true);
   const closeExecutiveMenu = () => setExecutiveMenuOpen(false);
+
+  // Token request modal
+  const { isOpen: isTokenRequestModalOpen, onOpen: openTokenRequestModal, onClose: closeTokenRequestModal } = useDisclosure();
+  const [showPendingRequests, setShowPendingRequests] = useState(false);
+  const [showRequestHistory, setShowRequestHistory] = useState(false);
   
 
   const glassLayerStyle = {
@@ -114,27 +197,31 @@ const UserprofileHub = () => {
   useEffect(() => {
     if (userData) {
       console.log(userData);
-      let progressData = calculateProgress(userData.ptTokenBalance);
+      // participationTokenBalance is already formatted by UserContext
+      const ptBalance = Number(userData.participationTokenBalance) || 0;
+      let progressData = calculateProgress(ptBalance);
       let userInfo = {
         username: graphUsername,
-        ptBalance: Number(userData.ptTokenBalance),
-        memberStatus: userData.memberType,
+        ptBalance: ptBalance,
+        memberStatus: userData.membershipStatus || 'Member',
         accountAddress: userData.id,
-        tasksCompleted: userData.tasksCompleted,
-        totalVotes: userData.totalVotes,
-        dateJoined: formatDateToAmerican(userData.dateJoined),
-        tier: determineTier(userData.ptTokenBalance),
+        tasksCompleted: userData.tasksCompleted || 0,
+        totalVotes: userData.totalVotes || 0,
+        dateJoined: userData.firstSeenAt ? formatDateToAmerican(userData.firstSeenAt) : 'Unknown',
+        tier: determineTier(ptBalance),
         progress: progressData.progress,
         nextTier: progressData.nextTier,
         nextTierThreshold: progressData.nextTierThreshold
       };
       setUserInfo(userInfo);
 
-      if (userInfo.memberStatus === "Executive") {
-        setIsExec(true);
       }
-    }
   }, [userData, graphUsername]);
+
+  // In POP, executive status is determined by hasExecRole from UserContext
+  useEffect(() => {
+    setIsExec(hasExecRole);
+  }, [hasExecRole]);
 
   const animatedPT = useSpring({ 
     pt: userInfo.ptBalance, 
@@ -151,6 +238,31 @@ const UserprofileHub = () => {
 
   const openSettingsModal = () => setSettingsModalOpen(true);
   const closeSettingsModal = () => setSettingsModalOpen(false);
+
+  // Check if user has claimed any roles (hatIds)
+  const userHatIds = userData?.hatIds || [];
+  const hasClaimedRole = userHatIds.length > 0;
+
+  // Composite loading state - wait for ALL data before deciding which view to show
+  // This prevents the "flicker" caused by partial data rendering
+  const isFullyLoaded = !orgLoading && !userDataLoading && orgName;
+
+  // Show skeleton while ANY data is still loading
+  if (!isFullyLoaded) {
+    return <WelcomePageSkeleton />;
+  }
+
+  // Show welcome/claim page if user hasn't claimed any role yet
+  if (!hasClaimedRole && claimableRoles.length > 0) {
+    return (
+      <WelcomeClaimPage
+        orgName={orgName}
+        orgMetadata={orgMetadata}
+        claimableRoles={claimableRoles}
+        eligibilityModuleAddress={eligibilityModuleAddress}
+      />
+    );
+  }
 
   return (
     <>
@@ -225,8 +337,84 @@ const UserprofileHub = () => {
                   <Text textAlign={"center"} fontSize="md" p={2} mb="2">
                     {userInfo.progress < 100 ? `Progress to ${userInfo.nextTier} Tier: ${userInfo.ptBalance}/${userInfo.nextTierThreshold}` : `You have reached the highest tier!`}
                   </Text>
+                  {hasMemberRole && (
+                    <Button
+                      leftIcon={<AddIcon />}
+                      colorScheme="purple"
+                      size="sm"
+                      onClick={openTokenRequestModal}
+                      mb={2}
+                    >
+                      Request Tokens
+                    </Button>
+                  )}
                 </VStack>
               </Box>
+
+              {/* Token Request History Section */}
+              {hasMemberRole && (
+                <Box
+                  w="100%"
+                  mt={4}
+                  borderRadius="2xl"
+                  bg="transparent"
+                  boxShadow="lg"
+                  position="relative"
+                  zIndex={2}
+                >
+                  <div style={glassLayerStyle} />
+                  <HStack
+                    p={4}
+                    cursor="pointer"
+                    onClick={() => setShowRequestHistory(!showRequestHistory)}
+                    justify="space-between"
+                  >
+                    <Text fontWeight="bold" fontSize={{ base: "lg", md: "xl" }}>
+                      My Token Requests
+                    </Text>
+                    {showRequestHistory ? <ChevronUpIcon boxSize={6} /> : <ChevronDownIcon boxSize={6} />}
+                  </HStack>
+                  <Collapse in={showRequestHistory}>
+                    <Box p={4} pt={0}>
+                      <UserRequestHistory />
+                    </Box>
+                  </Collapse>
+                </Box>
+              )}
+
+              {/* Pending Requests Panel for Approvers */}
+              {hasApproverRole && (
+                <Box
+                  w="100%"
+                  mt={4}
+                  borderRadius="2xl"
+                  bg="transparent"
+                  boxShadow="lg"
+                  position="relative"
+                  zIndex={2}
+                >
+                  <div style={glassLayerStyle} />
+                  <HStack
+                    p={4}
+                    cursor="pointer"
+                    onClick={() => setShowPendingRequests(!showPendingRequests)}
+                    justify="space-between"
+                  >
+                    <Text fontWeight="bold" fontSize={{ base: "lg", md: "xl" }}>
+                      Pending Token Requests (Approver)
+                    </Text>
+                    {showPendingRequests ? <ChevronUpIcon boxSize={6} /> : <ChevronDownIcon boxSize={6} />}
+                  </HStack>
+                  <Collapse in={showPendingRequests}>
+                    <Box p={4} pt={0}>
+                      <PendingRequestsPanel />
+                    </Box>
+                  </Collapse>
+                </Box>
+              )}
+
+              {/* Token Request Modal */}
+              <TokenRequestModal isOpen={isTokenRequestModalOpen} onClose={closeTokenRequestModal} />
             </GridItem>
             <GridItem area={'tierinfo'} colSpan={2}>
               <Box
@@ -307,14 +495,10 @@ const UserprofileHub = () => {
                       <Link2 href={`/tasks/?task=${task.id}&projectId=${encodeURIComponent(decodeURIComponent(task.projectId))}&userDAO=${userDAO}`}>
                         <VStack textColor="white" align="stretch" spacing={3}>
                           <Text fontSize="md" lineHeight="99%" fontWeight="extrabold">
-                            {task.isIndexing ? 'Indexing...' : task.taskInfo?.name}
+                            {task.isIndexing ? 'Indexing...' : task.title}
                           </Text>
                           <HStack justify="space-between">
-                            {task.isIndexing ? (
-                              <Badge colorScheme="purple">Indexing from IPFS</Badge>
-                            ) : (
-                              <Badge colorScheme={difficultyColorScheme[task.taskInfo?.difficulty?.toLowerCase().replace(" ", "")]}>{task.taskInfo?.difficulty}</Badge>
-                            )}
+                            <Badge colorScheme="purple">{task.status}</Badge>
                             <Text fontWeight="bold">Payout {task.payout}</Text>
                           </HStack>
                         </VStack>
@@ -372,14 +556,10 @@ const UserprofileHub = () => {
                         <Link2 href={`/tasks/?task=${task.id}&projectId=${encodeURIComponent(decodeURIComponent(task.projectId))}`}>
                           <VStack textColor="white" align="stretch" spacing={3}>
                             <Text fontSize="md" lineHeight="99%" fontWeight="extrabold">
-                              {task.isIndexing ? 'Indexing...' : task.taskInfo?.name}
+                              {task.isIndexing ? 'Indexing...' : task.title}
                             </Text>
                             <HStack justify="space-between">
-                              {task.isIndexing ? (
-                                <Badge colorScheme="purple">Indexing from IPFS</Badge>
-                              ) : (
-                                <Badge colorScheme={difficultyColorScheme[task.taskInfo?.difficulty?.toLowerCase().replace(" ", "")]}>{task.taskInfo?.difficulty}</Badge>
-                              )}
+                              <Badge colorScheme="purple">{task.status}</Badge>
                               <Text fontWeight="bold">Payout {task.payout}</Text>
                             </HStack>
                           </VStack>

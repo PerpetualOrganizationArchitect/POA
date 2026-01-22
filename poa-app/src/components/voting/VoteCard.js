@@ -1,6 +1,8 @@
 import React from "react";
-import { Box, Text, Button, HStack, VStack, Badge, Flex, useBreakpointValue } from "@chakra-ui/react";
+import { Box, Text, Button, HStack, VStack, Badge, Flex, useBreakpointValue, Icon } from "@chakra-ui/react";
+import { LockIcon } from "@chakra-ui/icons";
 import CountDown from "@/templateComponents/studentOrgDAO/voting/countDown";
+import { useRoleNames } from "@/hooks";
 
 const glassLayerStyle = {
   position: "absolute",
@@ -14,18 +16,25 @@ const glassLayerStyle = {
   border: "1px solid rgba(148, 115, 220, 0.2)",
 };
 
-const VoteCard = ({ 
-  proposal, 
-  showDetermineWinner, 
-  getWinner, 
-  calculateRemainingTime, 
-  onPollClick, 
-  contractAddress 
+const VoteCard = ({
+  proposal,
+  showDetermineWinner,
+  getWinner,
+  calculateRemainingTime,
+  onPollClick,
+  contractAddress
 }) => {
+  const { getRoleNamesString, allRoles } = useRoleNames();
+
   // Use responsive sizing based on breakpoints
   const titleFontSize = useBreakpointValue({ base: "sm", sm: "md" });
-  const cardHeight = useBreakpointValue({ base: "180px", sm: "200px" });
+  const cardHeight = useBreakpointValue({ base: "180px", sm: "220px" });
   const cardPadding = useBreakpointValue({ base: 3, sm: 4 });
+
+// Get role names for restricted voting - use first role as default
+  const restrictedRolesText = proposal.isHatRestricted && proposal.restrictedHatIds?.length > 0
+    ? getRoleNamesString(proposal.restrictedHatIds)
+    : allRoles?.[0]?.name || "All Members";
   
   return (
     <Box
@@ -81,9 +90,9 @@ const VoteCard = ({
             pb={1}
             textAlign="center"
             noOfLines={2}
-            title={proposal.name}
+            title={proposal.title}
           >
-            {proposal.name}
+            {proposal.title}
           </Text>
         </Box>
         
@@ -94,7 +103,7 @@ const VoteCard = ({
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                getWinner(contractAddress, proposal.id);
+                getWinner(contractAddress, proposal.id, proposal.type === 'Hybrid');
               }}
               variant="outline"
               borderColor="rgba(148, 115, 220, 0.6)"
@@ -105,20 +114,20 @@ const VoteCard = ({
           ) : (
             <VStack spacing={1}>
               <Badge colorScheme="purple" fontSize="xs" mb={1}>Time Remaining</Badge>
-              <CountDown duration={calculateRemainingTime(proposal?.experationTimestamp)} />
+              <CountDown duration={calculateRemainingTime(proposal?.endTimestamp)} />
             </VStack>
           )}
         </Flex>
         
-        <VStack align="stretch" mt={{ base: 0, sm: 1 }}>
+        <VStack align="stretch" mt={{ base: 0, sm: 1 }} spacing={1}>
           <Text fontWeight="bold" fontSize="xs" color="rgba(148, 115, 220, 0.9)">
             Voting Options:
           </Text>
           <HStack mb={1} spacing={2} flexWrap="wrap" justify="center">
             {proposal.options.map((option, index) => (
-              <Badge 
-                key={index} 
-                colorScheme={index % 2 === 0 ? "purple" : "blue"} 
+              <Badge
+                key={index}
+                colorScheme={index % 2 === 0 ? "purple" : "blue"}
                 variant="subtle"
                 px={2}
                 py={1}
@@ -128,6 +137,21 @@ const VoteCard = ({
                 {option.name}
               </Badge>
             ))}
+          </HStack>
+
+          {/* Who can vote and quorum display */}
+          <HStack spacing={2} justify="center" flexWrap="wrap">
+            <HStack spacing={1}>
+              <Icon as={LockIcon} color="purple.300" boxSize={3} />
+              <Text fontSize="xs" color="gray.400">
+                {restrictedRolesText}
+              </Text>
+            </HStack>
+            {proposal.quorum > 0 && (
+              <Text fontSize="xs" color="gray.400">
+                {proposal.quorum}% participation needed
+              </Text>
+            )}
           </HStack>
         </VStack>
       </VStack>

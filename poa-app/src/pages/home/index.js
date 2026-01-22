@@ -28,7 +28,6 @@ import {
 } from "@chakra-ui/react";
 import { HamburgerIcon } from '@chakra-ui/icons';
 import Link2 from "next/link";
-import Typist from "react-typist";
 import { usePOContext } from "@/context/POContext";
 import { useIPFScontext } from "@/context/ipfsContext";
 import Navbar from "@/templateComponents/studentOrgDAO/NavBar";

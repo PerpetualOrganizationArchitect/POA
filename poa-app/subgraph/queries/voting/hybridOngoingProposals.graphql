@@ -1,9 +1,0 @@
-{
-  perpetualOrganization(id: "Test Org") {
-    HybridVoting {
-      proposals(orderBy: experationTimestamp, orderDirection: asc, where: {winningOptionIndex: null}) {
-        id
-      }
-    }
-  }
-}

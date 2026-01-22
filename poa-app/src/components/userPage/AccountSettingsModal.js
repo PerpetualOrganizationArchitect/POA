@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -10,20 +10,17 @@ import {
   Button,
   FormControl,
   FormLabel,
-  Input
+  Input,
+  useToast,
 } from '@chakra-ui/react';
-// import { useDataBaseContext } from '@/contexts/DataBaseContext';
-import { useWeb3Context } from '@/context/web3Context';
+import { useWeb3 } from '@/hooks';
 import { useUserContext } from '@/context/UserContext';
 
 
 const AccountSettingsModal = ({ isOpen, onClose }) => {
-    
-    const {address, graphUsername, setGraphUsername} = useUserContext();
-    const {changeUsername} = useWeb3Context();
-
-
-
+    const { graphUsername, setGraphUsername } = useUserContext();
+    const { user: userService, executeWithNotification } = useWeb3();
+    const toast = useToast();
 
 
     const [username, setUsername] = useState('');
@@ -41,25 +38,23 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
   const handleUsernameChange = (event) => setUsername(event.target.value);
   
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (!userService) return;
 
     if (graphUsername !== username) {
-      try{
-        await changeUsername(username);
+      const result = await executeWithNotification(
+        () => userService.changeUsername(username),
+        {
+          pendingMessage: 'Updating username...',
+          successMessage: 'Username updated successfully!',
+          refreshEvent: 'user:username_changed',
+        }
+      );
+
+      if (result.success) {
         setGraphUsername(username);
-      } catch (error) {
-        console.error(error);
-        toast({
-          title: 'Error Updating Username',
-          description: 'An error occurred. Please try again later.',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
       }
-      
-    }
-    else {
+    } else {
       toast({
         title: 'Username Unchanged',
         description: 'New username is the same as the old one. No changes made.',
@@ -69,7 +64,7 @@ const AccountSettingsModal = ({ isOpen, onClose }) => {
       });
     }
     onClose();
-  };
+  }, [userService, executeWithNotification, username, graphUsername, setGraphUsername, toast, onClose]);
 
 
   return (

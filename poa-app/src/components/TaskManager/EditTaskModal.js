@@ -12,19 +12,42 @@ import {
   ModalFooter,
   ModalOverlay,
   Select,
+  HStack,
+  VStack,
+  Switch,
+  Box,
+  Text,
+  InputGroup,
+  InputRightAddon,
 } from '@chakra-ui/react';
+import { BOUNTY_TOKEN_OPTIONS, BOUNTY_TOKENS, hasBounty as checkHasBounty } from '../../util/tokens';
 
 const EditTaskModal = ({ isOpen, onClose, onEditTask, onDeleteTask, task }) => {
   const [name, setName] = useState(task.name);
   const [description, setDescription] = useState(task.description);
-  
   const [difficulty, setDifficulty] = useState(task.difficulty);
   const [estHours, setEstimatedHours] = useState(task.estHours);
- 
+
+  // Bounty state - initialize from task if bounty exists
+  const taskHasBounty = checkHasBounty(task.bountyToken, task.bountyPayout);
+  const [hasBounty, setHasBounty] = useState(taskHasBounty);
+  const [bountyToken, setBountyToken] = useState(
+    taskHasBounty ? task.bountyToken : BOUNTY_TOKENS.BREAD.address
+  );
+  const [bountyAmount, setBountyAmount] = useState(
+    taskHasBounty ? task.bountyPayout : ''
+  );
 
   const handleEditTask = () => {
-    
-    onEditTask({ ...task, name, description, difficulty, estHours });
+    onEditTask({
+      ...task,
+      name,
+      description,
+      difficulty,
+      estHours,
+      bountyToken: hasBounty ? bountyToken : BOUNTY_TOKENS.NONE.address,
+      bountyAmount: hasBounty ? bountyAmount : '0',
+    });
     onClose();
   };
 
@@ -80,6 +103,57 @@ const EditTaskModal = ({ isOpen, onClose, onEditTask, onDeleteTask, task }) => {
                 }}
               />
           </FormControl>
+
+          <FormControl mt={4}>
+            <HStack justify="space-between">
+              <FormLabel mb={0}>Token Bounty</FormLabel>
+              <Switch
+                isChecked={hasBounty}
+                onChange={(e) => setHasBounty(e.target.checked)}
+                colorScheme="teal"
+              />
+            </HStack>
+          </FormControl>
+
+          {hasBounty && (
+            <Box w="100%" mt={3} p={3} bg="gray.50" borderRadius="md">
+              <VStack spacing={3}>
+                <FormControl>
+                  <FormLabel fontSize="sm">Token</FormLabel>
+                  <Select
+                    value={bountyToken}
+                    onChange={(e) => setBountyToken(e.target.value)}
+                    size="sm"
+                  >
+                    {BOUNTY_TOKEN_OPTIONS.filter(t => !t.isDefault).map((token) => (
+                      <option key={token.symbol} value={token.address}>
+                        {token.symbol} - {token.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl>
+                  <FormLabel fontSize="sm">Amount</FormLabel>
+                  <InputGroup size="sm">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={bountyAmount}
+                      onChange={(e) => setBountyAmount(e.target.value)}
+                    />
+                    <InputRightAddon>
+                      {BOUNTY_TOKEN_OPTIONS.find(t => t.address === bountyToken)?.symbol || 'TOKEN'}
+                    </InputRightAddon>
+                  </InputGroup>
+                </FormControl>
+                <Text fontSize="xs" color="gray.500">
+                  This bounty will be paid in addition to participation tokens
+                </Text>
+              </VStack>
+            </Box>
+          )}
         </ModalBody>
         <ModalFooter>
           <Button colorScheme="red" mr ="auto" onClick={() => onDeleteTask(task.id)}>

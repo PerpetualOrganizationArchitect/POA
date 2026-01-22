@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef, use, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { AddIcon } from '@chakra-ui/icons';
 import { Box, Heading, IconButton, Toast, Flex, Text } from '@chakra-ui/react';
 import { useDrop } from 'react-dnd';
 import TaskCard from './TaskCard';
 import { useTaskBoard } from '../../context/TaskBoardContext';
 import AddTaskModal from './AddTaskModal';
-import { useWeb3Context } from '../../context/web3Context';
+import { useAccount } from 'wagmi';
 import {usePOContext} from '@/context/POContext';
 import { useToast } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { useProjectContext } from '@/context/ProjectContext';
 import { useUserContext } from '@/context/UserContext';
+import { calculatePayout } from '../../util/taskUtils';
+import { userCanCreateTask, userCanReviewTask, PERMISSION_MESSAGES, ROLE_INDICES } from '../../util/permissions';
 
 
 const glassLayerStyle = {
@@ -31,11 +33,72 @@ const TaskColumn = forwardRef(({ title, tasks, columnId, projectName, isMobile =
   const {userDAO} = router.query;
   const { moveTask, addTask, editTask } = useTaskBoard();
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
-  const {account, mintKUBIX, createTask } = useWeb3Context();
-  const { taskManagerContractAddress,  } = usePOContext();
-  const {taskCount, } = useProjectContext();
+  const { address: account } = useAccount();
+  const { taskManagerContractAddress, roleHatIds } = usePOContext();
+  const { taskCount, projectsData } = useProjectContext();
   const toast = useToast();
-  const { graphUsername, hasExecNFT: userHasExecNFT, hasMemberNFT: userHasMemberNFT } = useUserContext();
+  const { graphUsername, hasMemberRole: userHasMemberRole, userData } = useUserContext();
+
+  // Get user's current hat IDs for permission checking
+  const userHatIds = userData?.hatIds || [];
+
+  // Normalize hat IDs for comparison
+  const normalizeHatId = (id) => String(id).trim();
+
+  // Find the current project's role permissions
+  const currentProject = useMemo(() => {
+    return projectsData?.find(p => p.name === projectName || p.title === projectName);
+  }, [projectsData, projectName]);
+
+  const projectRolePermissions = currentProject?.rolePermissions || [];
+
+  // Check if user has a non-member role (executive+)
+  const hasNonMemberRole = useMemo(() => {
+    if (!userHatIds.length || !roleHatIds?.length) return false;
+    const normalizedUserHats = userHatIds.map(normalizeHatId);
+    // roleHatIds[0] = member, roleHatIds[1] = executive, etc.
+    if (roleHatIds.length > 1) {
+      const nonMemberRoles = roleHatIds.slice(ROLE_INDICES.EXECUTIVE);
+      return nonMemberRoles.some(roleId =>
+        normalizedUserHats.includes(normalizeHatId(roleId))
+      );
+    }
+    return false;
+  }, [userHatIds, roleHatIds]);
+
+  // Check if user can create tasks in this project
+  // Falls back to checking if user has executive+ role when permissions are not configured
+  const canCreateTask = useMemo(() => {
+    const hasPermission = userCanCreateTask(userHatIds, projectRolePermissions);
+    if (hasPermission) {
+      console.debug('[TaskColumn] User has create permission via project role permissions');
+      return true;
+    }
+    // Fallback: If no project permissions configured, check if user has executive+ role
+    if (!projectRolePermissions?.length && hasNonMemberRole) {
+      console.debug('[TaskColumn] No project permissions configured, falling back to executive role check');
+      return true;
+    }
+    console.debug('[TaskColumn] User cannot create tasks');
+    return false;
+  }, [userHatIds, projectRolePermissions, hasNonMemberRole]);
+
+  // Check if user can review tasks in this project
+  // Falls back to checking if user has executive+ role when permissions are not configured
+  const canReviewTask = useMemo(() => {
+    const hasPermission = userCanReviewTask(userHatIds, projectRolePermissions);
+    if (hasPermission) {
+      console.debug('[TaskColumn] User has review permission via project role permissions');
+      return true;
+    }
+    // Fallback: If no project permissions configured, check if user has executive+ role
+    if (!projectRolePermissions?.length && hasNonMemberRole) {
+      console.debug('[TaskColumn] No project permissions configured, falling back to executive role check');
+      return true;
+    }
+    console.debug('[TaskColumn] User cannot review tasks');
+    return false;
+  }, [userHatIds, projectRolePermissions, hasNonMemberRole]);
 
   // Empty state icons and messages, moved from TaskBoard for consistency
   const emptyStateIcons = {
@@ -52,72 +115,57 @@ const TaskColumn = forwardRef(({ title, tasks, columnId, projectName, isMobile =
     'Completed': 'The finish line is waiting for your first completed task. Keep pushing!'
   };
 
-  let hasExecNFT = userHasExecNFT;
-  let hasMemberNFT = userHasMemberNFT;
-  const hasMemberNFTRef = useRef(hasMemberNFT);
-  const hasExecNFTRef = useRef(hasExecNFT);
+  let hasMemberRole = userHasMemberRole;
+  const hasMemberRoleRef = useRef(hasMemberRole);
+  const canReviewTaskRef = useRef(canReviewTask);
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     handleOpenAddTaskModal: () => {
       if (title === 'Open') {
-        if (hasExecNFT) {
+        if (canCreateTask) {
           setIsAddTaskModalOpen(true);
         } else {
-          alert('You must be an executive to add task');
+          toast({
+            title: 'Permission Required',
+            description: PERMISSION_MESSAGES.REQUIRE_CREATE,
+            status: 'warning',
+            duration: 4000,
+            isClosable: true,
+            position: 'top',
+          });
         }
       }
     }
-  }));
+  }), [title, canCreateTask, toast]);
 
   useEffect(() => {
-    hasMemberNFTRef.current = hasMemberNFT;
-  }, [hasMemberNFT]);
+    hasMemberRoleRef.current = hasMemberRole;
+  }, [hasMemberRole]);
 
   useEffect(() => {
-    hasExecNFTRef.current = hasExecNFT;
-  }, [hasExecNFT]);
+    canReviewTaskRef.current = canReviewTask;
+  }, [canReviewTask]);
 
   
   const handleCloseAddTaskModal = () => {
     setIsAddTaskModalOpen(false);
   };
   
-  const handleAddTask =  async (updatedTask) => {
-    
-    const calculatePayout = (difficulty, estimatedHours) => {
-  
-      const difficulties = {
-        easy: { base: 1, multiplier: 16.5 },
-        medium: { base: 4, multiplier: 24 },
-        hard: { base: 10, multiplier: 30 },
-        veryHard: { base: 25, multiplier: 37.5 },
-      };
-      
-      const { base, multiplier } = difficulties[difficulty];
-      const total = Math.round(base + (multiplier * estimatedHours));
-      return total;
-  
-    };
+  const handleAddTask = (updatedTask) => {
     if (title === 'Open') {
-      let Payout= calculatePayout(updatedTask.difficulty, updatedTask.estHours);
+      // Close modal immediately for optimistic UX
+      handleCloseAddTaskModal();
 
-      let hexTaskCount = taskCount.toString(16); 
-      let newTaskId = `0x${hexTaskCount}-${taskManagerContractAddress}`;
-
-      let newTask = {
-        ...updatedTask,
-        id: `${newTaskId}`,
-        claimedBy: "",
-        claimerUsername: "",
-        submission: "",
-        Payout: Payout,
-        projectId: projectName + "-"+taskManagerContractAddress
-      };
-      moveTask(newTask, 'open', 'open', 0, " ", 0);
-      await createTask(taskManagerContractAddress,Payout,  updatedTask.description, projectName, updatedTask.estHours,  updatedTask.difficulty, "Open", updatedTask.name,);
-     
-     
+      // addTask from TaskBoardContext handles:
+      // - Payout calculation
+      // - Optimistic UI update
+      // - Blockchain transaction via TaskService
+      // - Notifications and error handling
+      // Fire and forget - don't await, let it run in background
+      addTask(updatedTask, 'open').catch(error => {
+        console.error("Error adding task:", error);
+      });
     }
   };
   
@@ -148,23 +196,40 @@ const TaskColumn = forwardRef(({ title, tasks, columnId, projectName, isMobile =
     canDrop: () => true, // Always allow dropping
     drop: async(item) => {
       console.log(`Attempting to drop in ${title} column:`, item);
-      
-      if (!hasMemberNFTRef.current && title != 'Completed') {
-        alert('You must own an NFT to move tasks. Go to user to join');
+
+      if (!hasMemberRoleRef.current && title != 'Completed') {
+        toast({
+          title: 'Membership Required',
+          description: 'You must be a member to move tasks. Go to user page to join.',
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
         return;
       }
-      else if (!hasExecNFTRef.current && title === 'Completed') {
-        alert('You must be an Executive to review tasks.');
+      else if (!canReviewTaskRef.current && title === 'Completed') {
+        toast({
+          title: 'Permission Required',
+          description: PERMISSION_MESSAGES.REQUIRE_REVIEW,
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
         return;
       }
-      else if (title === 'Completed') {
-        console.log("item.claimedBy: ", item.claimedBy)
-        console.log("item.kubixPayout: ", item.kubixPayout)
-        setTimeout(async() => {await mintKUBIX(item.claimedBy, item.kubixPayout, true)}, 2100);
-      }
+      // Note: Token minting is now handled automatically by the contract on task completion
 
       if (item.columnId === 'completed') {
-        alert('You cannot move tasks from the Completed column.');
+        toast({
+          title: 'Action Not Allowed',
+          description: 'You cannot move tasks from the Completed column.',
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+          position: 'top',
+        });
         return;
       }
 
@@ -188,17 +253,17 @@ const TaskColumn = forwardRef(({ title, tasks, columnId, projectName, isMobile =
         };
         
         console.log(`Moving task from ${item.columnId} to ${columnId}, index: ${newIndex}`);
-        
-        // Fix URL update to include proper parameters (like the TaskCard openTask function does)
-        const safeProjectId = projectName ? encodeURIComponent(decodeURIComponent(projectName + "-" + taskManagerContractAddress)) : '';
-        
+
+        // Use the task's actual projectId (from subgraph), not constructed from projectName
+        const safeProjectId = item.projectId ? encodeURIComponent(decodeURIComponent(item.projectId)) : '';
+
         // Use the router.query.userDAO to maintain consistency
         router.push({
           pathname: `/tasks/`,
-          query: { 
-            userDAO: router.query.userDAO, 
+          query: {
+            userDAO: router.query.userDAO,
             projectId: safeProjectId,
-            task: draggedTask.id 
+            task: draggedTask.id
           }
         }, undefined, { shallow: true });
         
@@ -267,10 +332,17 @@ const TaskColumn = forwardRef(({ title, tasks, columnId, projectName, isMobile =
 
   const handleOpenAddTaskModal = () => {
     if (title === 'Open') {
-      if (hasExecNFT) {
+      if (canCreateTask) {
         setIsAddTaskModalOpen(true);
       } else {
-        alert('You must be an executive to add task');
+        toast({
+          title: 'Permission Required',
+          description: PERMISSION_MESSAGES.REQUIRE_CREATE,
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+          position: 'top',
+        });
       }
     }
   };

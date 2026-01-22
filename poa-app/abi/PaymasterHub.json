@@ -1,0 +1,2114 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "ENTRY_POINT",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "HATS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "POA_MANAGER",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "UPGRADE_INTERFACE_VERSION",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "clearRule",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "depositForOrg",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "depositToEntryPoint",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "donateToSolidarity",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "emergencyWithdraw",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "fundBounty",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "getBountyConfig",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.Bounty",
+        "components": [
+          {
+            "name": "enabled",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "maxBountyWeiPerOp",
+            "type": "uint96",
+            "internalType": "uint96"
+          },
+          {
+            "name": "pctBpCap",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "totalPaid",
+            "type": "uint144",
+            "internalType": "uint144"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getBudget",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "key",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.Budget",
+        "components": [
+          {
+            "name": "capPerEpoch",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "usedInEpoch",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "epochLen",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "epochStart",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getFeeCaps",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.FeeCaps",
+        "components": [
+          {
+            "name": "maxFeePerGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxPriorityFeePerGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxCallGas",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxVerificationGas",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxPreVerificationGas",
+            "type": "uint32",
+            "internalType": "uint32"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getGracePeriodConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.GracePeriodConfig",
+        "components": [
+          {
+            "name": "initialGraceDays",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxSpendDuringGrace",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "minDepositRequired",
+            "type": "uint128",
+            "internalType": "uint128"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getOnboardingConfig",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.OnboardingConfig",
+        "components": [
+          {
+            "name": "maxGasPerCreation",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "dailyCreationLimit",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "createdToday",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "currentDay",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "enabled",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getOrgConfig",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.OrgConfig",
+        "components": [
+          {
+            "name": "adminHatId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "operatorHatId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "voucherHatId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "paused",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "registeredAt",
+            "type": "uint40",
+            "internalType": "uint40"
+          },
+          {
+            "name": "bannedFromSolidarity",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getOrgFinancials",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.OrgFinancials",
+        "components": [
+          {
+            "name": "deposited",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "totalDeposited",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "spent",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "solidarityUsedThisPeriod",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "periodStart",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "reserved",
+            "type": "uint224",
+            "internalType": "uint224"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getOrgGraceStatus",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "inGrace",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "spendRemaining",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "requiresDeposit",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "solidarityLimit",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRule",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.Rule",
+        "components": [
+          {
+            "name": "maxCallGasHint",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "allowed",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getSolidarityFund",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PaymasterHub.SolidarityFund",
+        "components": [
+          {
+            "name": "balance",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "numActiveOrgs",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "feePercentageBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "reserved",
+            "type": "uint208",
+            "internalType": "uint208"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "initialize",
+    "inputs": [
+      {
+        "name": "_entryPoint",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_hats",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_poaManager",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isVouchUsed",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "postOp",
+    "inputs": [
+      {
+        "name": "mode",
+        "type": "uint8",
+        "internalType": "enum IPaymaster.PostOpMode"
+      },
+      {
+        "name": "context",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "actualGasCost",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "postUserOp",
+    "inputs": [
+      {
+        "name": "packedUserOp",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "opHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "proxiableUUID",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "registerOrg",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "adminHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "operatorHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "registerOrgWithVoucher",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "adminHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "operatorHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "voucherHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setBanFromSolidarity",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "banned",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setBounty",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "maxBountyWeiPerOp",
+        "type": "uint96",
+        "internalType": "uint96"
+      },
+      {
+        "name": "pctBpCap",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setBudget",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "subjectKey",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "capPerEpoch",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "epochLen",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setEpochStart",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "subjectKey",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "epochStart",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setFeeCaps",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxFeePerGas",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxPriorityFeePerGas",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCallGas",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxVerificationGas",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxPreVerificationGas",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setGracePeriodConfig",
+    "inputs": [
+      {
+        "name": "_initialGraceDays",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "_maxSpendDuringGrace",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "_minDepositRequired",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setOnboardingConfig",
+    "inputs": [
+      {
+        "name": "_maxGasPerCreation",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "_dailyCreationLimit",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "_enabled",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setOperatorHat",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "operatorHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setPause",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "paused",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRule",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      },
+      {
+        "name": "allowed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "maxCallGasHint",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRulesBatch",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "targets",
+        "type": "address[]",
+        "internalType": "address[]"
+      },
+      {
+        "name": "selectors",
+        "type": "bytes4[]",
+        "internalType": "bytes4[]"
+      },
+      {
+        "name": "allowed",
+        "type": "bool[]",
+        "internalType": "bool[]"
+      },
+      {
+        "name": "maxCallGasHints",
+        "type": "uint32[]",
+        "internalType": "uint32[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setSolidarityFee",
+    "inputs": [
+      {
+        "name": "feePercentageBps",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setVoucherHat",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "voucherHatId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "supportsInterface",
+    "inputs": [
+      {
+        "name": "interfaceId",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "sweepBounty",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address payable"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "upgradeToAndCall",
+    "inputs": [
+      {
+        "name": "newImplementation",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "validatePaymasterUserOp",
+    "inputs": [
+      {
+        "name": "userOp",
+        "type": "tuple",
+        "internalType": "struct PackedUserOperation",
+        "components": [
+          {
+            "name": "sender",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "nonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "initCode",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "callData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "accountGasLimits",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "preVerificationGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxFeePerGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "maxPriorityFeePerGas",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "paymasterAndData",
+            "type": "bytes",
+            "internalType": "bytes"
+          },
+          {
+            "name": "signature",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "userOpHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxCost",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "context",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "validationData",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawFromEntryPoint",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address payable"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "BountyConfig",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "maxPerOp",
+        "type": "uint96",
+        "indexed": false,
+        "internalType": "uint96"
+      },
+      {
+        "name": "pctBpCap",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyFunded",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newBalance",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyPaid",
+    "inputs": [
+      {
+        "name": "userOpHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountyPayFailed",
+    "inputs": [
+      {
+        "name": "userOpHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BountySweep",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "BudgetSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "subjectKey",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "capPerEpoch",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "epochLen",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "epochStart",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DepositIncrease",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newDeposit",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DepositWithdraw",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "EmergencyWithdraw",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FeeCapsSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maxFeePerGas",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxPriorityFeePerGas",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCallGas",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxVerificationGas",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxPreVerificationGas",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "GracePeriodConfigUpdated",
+    "inputs": [
+      {
+        "name": "initialGraceDays",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxSpendDuringGrace",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "minDepositRequired",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Initialized",
+    "inputs": [
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OnboardingAccountCreated",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "gasCost",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OnboardingConfigUpdated",
+    "inputs": [
+      {
+        "name": "maxGasPerCreation",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "dailyCreationLimit",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "enabled",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OperatorHatSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "operatorHatId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OrgBannedFromSolidarity",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "banned",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OrgDepositReceived",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OrgRegistered",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "adminHatId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "operatorHatId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PauseSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "paused",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PaymasterInitialized",
+    "inputs": [
+      {
+        "name": "entryPoint",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "hats",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "poaManager",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RuleSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "indexed": true,
+        "internalType": "bytes4"
+      },
+      {
+        "name": "allowed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      },
+      {
+        "name": "maxCallGasHint",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SolidarityDonationReceived",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SolidarityFeeCollected",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Upgraded",
+    "inputs": [
+      {
+        "name": "implementation",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UsageIncreased",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "subjectKey",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "delta",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "usedInEpoch",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "epochStart",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "UserOpPosted",
+    "inputs": [
+      {
+        "name": "opHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "postedBy",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VouchUsed",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "voucher",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "VoucherHatSet",
+    "inputs": [
+      {
+        "name": "orgId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "voucherHatId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AddressEmptyCode",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ArrayLengthMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BudgetExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ContractNotDeployed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignatureLength",
+    "inputs": [
+      {
+        "name": "length",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ECDSAInvalidSignatureS",
+    "inputs": [
+      {
+        "name": "s",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "EPOnly",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ERC1967InvalidImplementation",
+    "inputs": [
+      {
+        "name": "implementation",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC1967NonPayable",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FailedCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FeeTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "GasTooHigh",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "GracePeriodSpendLimitReached",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Ineligible",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientDepositForSolidarity",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientFunds",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientOrgBalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidBountyConfig",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidEpochLength",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidPaymasterData",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidRuleId",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidSubjectType",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidVersion",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidVouchSignature",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotAdmin",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotInitializing",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotOperator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotPoaManager",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnboardingDailyLimitExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OnboardingDisabled",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OrgAlreadyRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OrgIsBanned",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OrgNotRegistered",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Paused",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PaymentFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ReentrancyGuardReentrantCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RuleDenied",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "selector",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SolidarityLimitExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UUPSUnauthorizedCallContext",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UUPSUnsupportedProxiableUUID",
+    "inputs": [
+      {
+        "name": "slot",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "VouchAlreadyUsed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VouchExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VoucherHatNotSet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "VoucherNotAuthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  }
+]

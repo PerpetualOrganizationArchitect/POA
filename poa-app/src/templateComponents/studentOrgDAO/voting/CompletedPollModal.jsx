@@ -13,7 +13,12 @@ import {
   HStack,
   Progress,
   Box,
+  Badge,
+  Icon,
+  Tooltip,
 } from "@chakra-ui/react";
+import { CheckCircleIcon, TimeIcon, InfoOutlineIcon, LockIcon } from "@chakra-ui/icons";
+import { useRoleNames } from "@/hooks";
 import { ethers } from "ethers";
 import { useRouter } from "next/router";
 
@@ -33,6 +38,17 @@ const CompletedPollModal = ({ onOpen, isOpen, onClose, selectedPoll, voteType })
   const router = useRouter();
   const { userDAO } = router.query;
   const [processedOptions, setProcessedOptions] = useState([]);
+  const { getRoleNamesString, allRoles } = useRoleNames();
+
+  // Get role names for restricted voting
+  const restrictedRolesText = selectedPoll?.isHatRestricted && selectedPoll?.restrictedHatIds?.length > 0
+    ? getRoleNamesString(selectedPoll.restrictedHatIds)
+    : allRoles?.[0]?.name || "All Members";
+
+  // Determine if this proposal had executable actions
+  const hasExecutableActions = selectedPoll?.executionBatchId || selectedPoll?.executedCallsCount > 0;
+  const wasExecuted = selectedPoll?.wasExecuted;
+  const isValid = selectedPoll?.isValid !== false; // Default to true if not specified
 
   const handleModalClose = () => {
     onClose();
@@ -107,7 +123,7 @@ const CompletedPollModal = ({ onOpen, isOpen, onClose, selectedPoll, voteType })
         ...option,
         processedVotes: option.normalizedVotes,
         percentage: percentage,
-        isWinner: index === selectedPoll.winningOptionIndex,
+        isWinner: index === selectedPoll.winningOption,
       };
     });
     
@@ -149,7 +165,7 @@ const CompletedPollModal = ({ onOpen, isOpen, onClose, selectedPoll, voteType })
           fontWeight="extrabold"
           fontSize="2xl"
         >
-          {selectedPoll?.name}
+          {selectedPoll?.title}
         </ModalHeader>
         <ModalCloseButton color="white" />
         
@@ -163,6 +179,67 @@ const CompletedPollModal = ({ onOpen, isOpen, onClose, selectedPoll, voteType })
                 </Text>
               </Box>
             )}
+
+            {/* Voting Info & Execution Status */}
+            <HStack spacing={3} justify="center" flexWrap="wrap">
+              {/* Who could vote */}
+              <HStack spacing={1}>
+                <Icon as={LockIcon} color="purple.300" boxSize={3} />
+                <Text fontSize="xs" color="gray.400">
+                  Voters:{" "}
+                  <Text as="span" color="purple.300" fontWeight="medium">
+                    {restrictedRolesText}
+                  </Text>
+                </Text>
+              </HStack>
+
+              {/* Quorum info */}
+              {selectedPoll?.quorum > 0 && (
+                <Text fontSize="xs" color="gray.400">
+                  {selectedPoll.quorum}% participation needed
+                </Text>
+              )}
+
+              {/* Execution Status */}
+              {isValid && (
+                <Tooltip
+                  label={wasExecuted
+                    ? "The winning option's action was applied on-chain"
+                    : hasExecutableActions
+                      ? "This proposal has actions waiting to be executed"
+                      : "This was a signaling vote with no on-chain action"
+                  }
+                  placement="top"
+                  hasArrow
+                  bg="gray.700"
+                >
+                  <Badge
+                    colorScheme={wasExecuted ? "green" : hasExecutableActions ? "yellow" : "gray"}
+                    variant="subtle"
+                    px={2}
+                    py={1}
+                    borderRadius="md"
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    cursor="help"
+                  >
+                    <Icon
+                      as={wasExecuted ? CheckCircleIcon : hasExecutableActions ? TimeIcon : InfoOutlineIcon}
+                      boxSize={3}
+                    />
+                    {wasExecuted ? "Decision Applied" : hasExecutableActions ? "Pending Execution" : "Signal Vote"}
+                  </Badge>
+                </Tooltip>
+              )}
+
+              {/* Invalid proposal warning */}
+              {!isValid && (
+                <Badge colorScheme="red" variant="subtle" px={2} py={1} borderRadius="md">
+                  Did not meet quorum
+                </Badge>
+              )}
+            </HStack>
 
             {/* Results Section */}
             <VStack color="rgba(333, 333, 333, 1)" spacing={4} align="stretch">

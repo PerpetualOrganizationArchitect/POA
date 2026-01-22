@@ -19,7 +19,7 @@ const Tasks = () => {
       console.log("Decoded projectId from query:", rawProjectId);
       setSelectedProjectId(rawProjectId);
     }
-    else {
+    else if (projects && projects.length > 0) {
       setSelectedProjectId(projects[0].id);
     }
   }, [router.query.projectId, projects]);

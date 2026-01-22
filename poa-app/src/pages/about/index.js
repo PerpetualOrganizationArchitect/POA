@@ -342,7 +342,7 @@ const AboutPage = () => {
             </FeatureCard>
             
             <FeatureCard title="Ready for Growth" icon={FaRocket}>
-              Currently in live Alpha stage deployed on Polygon Amoy testnet, with continuous improvements on the way.
+              Currently in live Alpha stage deployed on Hoodi testnet, with continuous improvements on the way.
             </FeatureCard>
           </SimpleGrid>
         </Container>

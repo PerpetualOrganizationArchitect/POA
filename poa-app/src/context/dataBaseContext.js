@@ -1,9 +1,4 @@
-import {ethers } from 'ethers';
-import { createContext, useContext, useState, useEffect, use } from 'react';
-import { useWeb3Context } from './web3Context';
-import { useIPFScontext } from './ipfsContext';
-import { set } from 'lodash';
-import { id } from 'ethers/lib/utils';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { useProjectContext } from './ProjectContext';
 import { useRouter } from 'next/router';
 
@@ -29,126 +24,68 @@ export const DataBaseProvider = ({ children }) => {
         if (typeof projectsData === 'object' && projectsData !== null && Object.keys(projectsData).length !== 0) {
             console.log("projectsData", projectsData);
             setProjects(projectsData);
-            setSelectedProject(projectsData[0]);
+
+            // Only set selectedProject if:
+            // 1. No project is currently selected, OR
+            // 2. The currently selected project is no longer in the list
+            // This preserves the user's selection when data is refreshed
+            setSelectedProject(prev => {
+                // If we have a selection and it still exists in the new data, update it with fresh data
+                if (prev && prev.id) {
+                    const updatedProject = projectsData.find(p => p.id === prev.id);
+                    if (updatedProject) {
+                        return updatedProject;
+                    }
+                }
+                // Otherwise default to first project
+                return projectsData[0];
+            });
         }
     },[projectsData])
 
 
-    const [projects, setProjects] = useState([
-        {
-          id: 'project-1',
-          name: 'Project One',
-          description: 'This is a description of Project One.',
-          columns: [
-            {
-              id: 'open',
-              title: 'Open',
-              tasks: [
-                {
-                  id: 'task-1',
-                  name: 'Task One',
-                  description: 'This is a description of Task One.',
-                  difficulty: 'Easy',
-                  estHours: 5,
-                  submission: '',
-                  claimedBy: '',
-                  Payout: 1,
-                  projectId: 'project-1'
-                },
-                {
-                  id: 'task-2',
-                  name: 'Task Two',
-                  description: 'This is a description of Task Two.',
-                  difficulty: 'Medium',
-                  estHours: 10,
-                  submission: '',
-                  claimedBy: '',
-                    Payout: 2,
-                    projectId: 'project-1'
-                }
-              ],
-            },
-            {
-              id: 'inProgress',
-              title: 'In Progress',
-              tasks: [
-                {
-                  id: 'task-3',
-                  name: 'Task Three',
-                  description: 'This is a description of Task Three.',
-                  difficulty: 'Hard',
-                  estHours: 20,
-                  submission: '',
-                  claimedBy: ''
-                }
-              ],
-            }
-          ]
-        },
-        {
-          id: 'project-2',
-          name: 'Project Two',
-          description: 'This is a description of Project Two.',
-          startDate: '2023-05-15',
-          endDate: '2024-05-14',
-          status: 'Completed'
-        },
-        {
-          id: 'project-3',
-          name: 'Project Three',
-          description: 'This is a description of Project Three.',
-          startDate: '2024-03-01',
-          endDate: '2025-03-01',
-          status: 'Planned'
-        }
-      ]);
+    // Projects are populated from ProjectContext via useEffect
+    const [projects, setProjects] = useState([]);
 
-      const emptyProjectTemplate = {
-        id: '', 
-        name: '', 
-        description: '', 
-        columns: [
-          {
-            id: '', 
-            title: '', 
-            tasks: [
-              {
-                id: '', 
-                name: '',
-                description: '', 
-                difficulty: '', 
-                estHours: 0, 
-                submission: '', 
-                claimedBy: '', 
-                Payout: 0, 
-                projectId: '' 
-              },
-              
-            ],
-          },
-          
-        ],
-      };
-      
-      
-      
-      
 
     function setSelectedProjectId(projectId){
-  
+
       const project = projects.find(project => project.id === projectId);
       setSelectedProject(project);
     }
 
     const [selectedProject,setSelectedProject] = useState('')
 
+    // Placeholder function - username lookup should use subgraph data
+    const getUsernameByAddress = async (address) => {
+      // In POP, usernames are stored in the subgraph via UniversalAccountRegistry
+      // For now, return a truncated address as fallback
+      if (!address) return 'Unknown';
+      return `${address.substring(0, 6)}...${address.substring(38)}`;
+    };
 
-    
-  
-    
+    // Handle column updates from TaskBoard
+    const handleUpdateColumns = (newColumns) => {
+      if (selectedProject) {
+        const updatedProject = { ...selectedProject, columns: newColumns };
+        setSelectedProject(updatedProject);
+
+        // Update in projects array too
+        setProjects(prev => prev.map(p =>
+          p.id === selectedProject.id ? updatedProject : p
+        ));
+      }
+    };
+
     return (
         <DataBaseContext.Provider
-        value={{projects,  setSelectedProjectId, selectedProject, setSelectedProject
+        value={{
+          projects,
+          setSelectedProjectId,
+          selectedProject,
+          setSelectedProject,
+          handleUpdateColumns,
+          getUsernameByAddress,
         }}
         >
         {children}

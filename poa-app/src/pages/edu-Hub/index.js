@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Spinner,
@@ -26,90 +26,83 @@ import {
   FormErrorMessage,
   useDisclosure,
   useToast,
-  Progress, 
-  Icon, 
+  Progress,
+  Icon,
 } from '@chakra-ui/react';
-import { CheckIcon } from '@chakra-ui/icons'; 
+import { CheckIcon } from '@chakra-ui/icons';
 import Navbar from "@/templateComponents/studentOrgDAO/NavBar";
 import { usePOContext } from '@/context/POContext';
-import { useWeb3Context } from '@/context/web3Context';
+import { useWeb3 } from '@/hooks';
 import { useUserContext } from '@/context/UserContext';
 import QuizModal from '@/components/eduHub/QuizModal';
+import { useRouter } from 'next/router';
 
 const EducationHub = () => {
-  const { poContextLoading, educationModules, nftMembershipContractAddress, educationHubAddress } = usePOContext();
-  const { completedModules } = useUserContext();
-  const { createEduModule, checkIsExecutive, address } = useWeb3Context();
-  const [isExecutive, setIsExecutive] = useState(false);
-  const [isLoadingExecCheck, setIsLoadingExecCheck] = useState(true);
+  const { poContextLoading, educationModules, educationHubAddress, educationHubEnabled } = usePOContext();
+  const { completedModules, hasExecRole, userDataLoading } = useUserContext();
+  const { education, executeWithNotification } = useWeb3();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
+  const router = useRouter();
+  const { userDAO } = router.query;
+
+  // Redirect to dashboard if education hub is disabled for this organization
+  useEffect(() => {
+    if (!poContextLoading && !educationHubEnabled && userDAO) {
+      router.replace(`/dashboard/?userDAO=${userDAO}`);
+    }
+  }, [poContextLoading, educationHubEnabled, userDAO, router]);
 
   // Form state
   const [moduleTitle, setModuleTitle] = useState('');
   const [moduleDescription, setModuleDescription] = useState('');
-  const [moduleLink, setModuleLink] = useState(''); 
-  const [moduleQuestion, setModuleQuestion] = useState(''); 
+  const [moduleLink, setModuleLink] = useState('');
+  const [moduleQuestion, setModuleQuestion] = useState('');
   const [payout, setPayout] = useState(0);
   const [answers, setAnswers] = useState(['', '', '', '']);
   const [correctAnswerIndex, setCorrectAnswerIndex] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check if the user is an executive
-  useEffect(() => {
-    const checkExecutiveStatus = async () => {
-      if (nftMembershipContractAddress && address) {
-        const execStatus = await checkIsExecutive(nftMembershipContractAddress, address);
-        setIsExecutive(execStatus);
-      }
-      setIsLoadingExecCheck(false);
+  // Executive status comes from UserContext (Hats-based check)
+  const isExecutive = hasExecRole;
+  const isLoadingExecCheck = userDataLoading;
+
+  const handleAddModule = useCallback(async () => {
+    if (!education) return;
+
+    setIsSubmitting(true);
+
+    // Reset form immediately and close modal
+    const formData = {
+      name: moduleTitle,
+      description: moduleDescription,
+      link: moduleLink,
+      quiz: [moduleQuestion],
+      answers: [answers],
+      correctAnswers: [correctAnswerIndex],
+      payout,
     };
-    checkExecutiveStatus();
-  }, [nftMembershipContractAddress, address]);
 
-  const handleAddModule = async () => {
-          // Reset form
-          setModuleTitle('');
-          setModuleDescription('');
-          setModuleLink('');
-          setModuleQuestion('');
-          setPayout(0);
-          setAnswers(['', '', '', '']);
-          setCorrectAnswerIndex(null);
-          onClose();
-    try {
-      const selectedAnswer = answers[correctAnswerIndex];
-      await createEduModule(
-        educationHubAddress,
-        moduleTitle,
-        moduleDescription,
-        moduleLink, 
-        moduleQuestion,
-        payout,
-        answers,
-        selectedAnswer
-      );
-      toast({
-        title: "Module Created",
-        description: "Your module has been successfully created.",
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
+    setModuleTitle('');
+    setModuleDescription('');
+    setModuleLink('');
+    setModuleQuestion('');
+    setPayout(0);
+    setAnswers(['', '', '', '']);
+    setCorrectAnswerIndex(null);
+    onClose();
 
-    } catch (error) {
-      console.error("Error creating module:", error);
-      toast({
-        title: "Error",
-        description: "There was an error creating the module.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    const result = await executeWithNotification(
+      () => education.createModule(educationHubAddress, formData),
+      {
+        pendingMessage: 'Creating education module...',
+        successMessage: 'Module created successfully!',
+        refreshEvent: 'module:created',
+      }
+    );
+
+    setIsSubmitting(false);
+  }, [education, executeWithNotification, educationHubAddress, moduleTitle, moduleDescription, moduleLink, moduleQuestion, answers, correctAnswerIndex, payout, onClose]);
 
 
   const totalModules = educationModules.length;

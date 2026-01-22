@@ -6,19 +6,21 @@ import NextLink from "next/link";
 import { useRouter } from "next/router";
 import LoginButton from "@/components/LoginButton";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { usePOContext } from "@/context/POContext";
 
 const Navbar = () => {
   const router = useRouter();
   const { userDAO } = router.query;
   const { isOpen, onOpen, onClose } = useDisclosure();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const { educationHubEnabled } = usePOContext();
 
-  // Navigation items with icons
+  // Navigation items - conditionally include Learn & Earn based on educationHubEnabled
   const navItems = [
     { name: 'Dashboard', path: `/dashboard/?userDAO=${userDAO}` },
     { name: 'Tasks', path: `/tasks/?userDAO=${userDAO}` },
     { name: 'Voting', path: `/voting/?userDAO=${userDAO}` },
-    { name: 'Learn & Earn', path: `/edu-Hub/?userDAO=${userDAO}` },
+    ...(educationHubEnabled ? [{ name: 'Learn & Earn', path: `/edu-Hub/?userDAO=${userDAO}` }] : []),
   ];
 
   // Function to check active route
@@ -139,16 +141,18 @@ const Navbar = () => {
           >
             Voting
           </Link>
-          <Link
-            as={NextLink}
-            href={`/edu-Hub/?userDAO=${userDAO}`}
-            color="white"
-            fontWeight="extrabold"
-            fontSize="xl"
-            mx={"2%"}
-          >
-            Learn & Earn
-          </Link>
+          {educationHubEnabled && (
+            <Link
+              as={NextLink}
+              href={`/edu-Hub/?userDAO=${userDAO}`}
+              color="white"
+              fontWeight="extrabold"
+              fontSize="xl"
+              mx={"2%"}
+            >
+              Learn & Earn
+            </Link>
+          )}
           <LoginButton />
         </Flex>
 

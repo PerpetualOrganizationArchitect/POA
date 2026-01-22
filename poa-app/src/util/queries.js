@@ -1,342 +1,349 @@
-// // queries.js
 import { gql } from '@apollo/client';
 
+// ============================================
+// POP SUBGRAPH QUERIES (Hoodi testnet)
+// Schema: https://api.studio.thegraph.com/query/73367/poa-2/version/latest
+// ============================================
 
-
-export const FETCH_USERNAME = gql`
-  query FetchUsername($id: String!) {
-    account(id: $id) {
+// Fetch all organizations for browsing
+export const FETCH_ALL_ORGS = gql`
+  query FetchAllOrgs {
+    organizations(first: 100, orderBy: deployedAt, orderDirection: desc) {
       id
-      userName
+      name
+      metadataHash
+      deployedAt
+      topHatId
+      participationToken {
+        id
+        totalSupply
+      }
+      quickJoin {
+        id
+      }
+      hybridVoting {
+        id
+      }
+      directDemocracyVoting {
+        id
+      }
+      taskManager {
+        id
+      }
+      educationHub {
+        id
+      }
     }
   }
 `;
 
-export const FETCH_ALL_PO_DATA = gql`
-  query FetchCombinedData($id: String!, $poName: String!, $combinedID: String!) {
-    perpetualOrganization(id: $poName) {
+// Fetch single organization by orgId (bytes)
+export const FETCH_ORG_BY_ID = gql`
+  query FetchOrgById($id: Bytes!) {
+    organization(id: $id) {
       id
-      logoHash
-      totalMembers
-      aboutInfo {
+      name
+      metadataHash
+      deployedAt
+      topHatId
+      roleHatIds
+      participationToken {
+        id
+        name
+        symbol
+        totalSupply
+      }
+      quickJoin {
+        id
+      }
+      hybridVoting {
+        id
+        quorum
+      }
+      directDemocracyVoting {
+        id
+        quorumPercentage
+      }
+      taskManager {
+        id
+        projects {
+          id
+          title
+          deleted
+        }
+      }
+      educationHub {
+        id
+        nextModuleId
+      }
+      executorContract {
+        id
+      }
+      users {
+        id
+        address
+        username
+        participationTokenBalance
+        membershipStatus
+        currentHatIds
+      }
+      roles(where: { isUserRole: true }) {
+        id
+        hatId
+        name
+        image
+        canVote
+        isUserRole
+      }
+    }
+  }
+`;
+
+// Fetch username from UniversalAccountRegistry
+export const FETCH_USERNAME_NEW = gql`
+  query FetchUsernameNew($id: Bytes!) {
+    account(id: $id) {
+      id
+      username
+    }
+  }
+`;
+
+// Lookup account by username (returns address)
+export const GET_ACCOUNT_BY_USERNAME = gql`
+  query GetAccountByUsername($username: String!) {
+    accounts(where: { username: $username }, first: 1) {
+      id
+      user
+      username
+    }
+  }
+`;
+
+// Lookup multiple accounts by usernames (batch lookup)
+export const GET_ACCOUNTS_BY_USERNAMES = gql`
+  query GetAccountsByUsernames($usernames: [String!]!) {
+    accounts(where: { username_in: $usernames }) {
+      id
+      user
+      username
+    }
+  }
+`;
+
+// Lookup organization by name (returns ID for further queries)
+export const GET_ORG_BY_NAME = gql`
+  query GetOrgByName($name: String!) {
+    organizations(where: { name: $name }, first: 1) {
+      id
+      name
+    }
+  }
+`;
+
+// Fetch full organization data
+export const FETCH_ORG_FULL_DATA = gql`
+  query FetchOrgFullData($orgId: Bytes!) {
+    organization(id: $orgId) {
+      id
+      name
+      metadataHash
+      metadata {
         id
         description
+        template
         links {
-          id
           name
           url
+          index
         }
       }
-      TaskManager {
+      deployedAt
+      topHatId
+      roleHatIds
+      participationToken {
         id
-        projects(where: { deleted: false }) {
-          id
-          name
-          tasks {
-            id
-            taskInfo {
-              id
-              name
-              description
-              difficulty
-              estimatedHours
-              location
-              submissionContent
-            }
-            payout
-            claimer
-            completed
-            user {
-              id
-              Account {
-                id
-                userName
-              }
-            }
-          }
-        }
-        activeTaskAmount
-        completedTaskAmount
-        deletedTaskAmount
+        name
+        symbol
+        totalSupply
       }
-      ParticipationToken {
-        id
-        supply
-      }
-      Treasury {
-        id
-        votingContract
-      }
-      QuickJoinContract {
+      quickJoin {
         id
       }
-      HybridVoting {
+      hybridVoting {
         id
         quorum
-        proposals {
+      }
+      directDemocracyVoting {
+        id
+        quorumPercentage
+      }
+      taskManager {
+        id
+        creatorHatIds
+        projects(where: { deleted: false }, first: 100) {
           id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          validWinner
-          options {
+          tasks(first: 200) {
             id
-            name
-            optionVotesPT
-            optionVotesDD
-            currentPercentage
+            status
           }
         }
       }
-      ParticipationVoting {
-        id
-        quorum
-        proposals {
-          id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          validWinner
-          options {
-            id
-            name
-            votes
-          }
-        }
-      }
-      DirectDemocracyVoting {
-        id
-        quorum
-        proposals {
-          id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          validWinner
-          options {
-            id
-            name
-            votes
-          }
-        }
-      }
-      DirectDemocracyToken {
-        id
-      }
-      NFTMembership {
-        id
-        executiveRoles
-        memberTypeNames
-      }
-      EducationHubContract {  
+      educationHub {
         id
         modules {
           id
-          name
-          ipfsHash
+          moduleId
+          title
+          contentHash
           payout
-          info{
-            id
-            description
-            link
-            question
-            answers{
-              id
-              answer 
-              index
-            }
-          }
-          completetions {
-            id
-            user {
-              id
-              Account {
-                userName
-              }
-            }
+          status
+          completions {
+            learner
           }
         }
       }
-      ElectionContract {   
+      executorContract {
         id
-        elections {
+      }
+      users(orderBy: participationTokenBalance, orderDirection: desc, first: 100) {
+        id
+        address
+        username
+        participationTokenBalance
+        membershipStatus
+        currentHatIds
+        totalTasksCompleted
+        totalVotes
+        firstSeenAt
+      }
+      roles(where: { isUserRole: true }) {
+        id
+        hatId
+        name
+        image
+        canVote
+        isUserRole
+        hat {
+          name
+        }
+      }
+    }
+  }
+`;
+
+// Fetch voting data (proposals for both hybrid and DD voting)
+export const FETCH_VOTING_DATA_NEW = gql`
+  query FetchVotingDataNew($orgId: Bytes!) {
+    organization(id: $orgId) {
+      id
+      hybridVoting {
+        id
+        quorum
+        votingClasses(where: { isActive: true }, orderBy: classIndex, orderDirection: asc) {
+          id
+          classIndex
+          strategy
+          slicePct
+          quadratic
+          minBalance
+          asset
+          hatIds
+          isActive
+        }
+        proposals(orderBy: startTimestamp, orderDirection: desc, first: 50) {
           id
           proposalId
-          isActive
-          winningCandidateIndex
-          candidates {
-            id
-            candidateName
-            isWinner
+          title
+          descriptionHash
+          numOptions
+          startTimestamp
+          endTimestamp
+          status
+          winningOption
+          isValid
+          wasExecuted
+          isHatRestricted
+          restrictedHatIds
+          votes {
+            voter
+            voterUsername
+            optionIndexes
+            optionWeights
+            classRawPowers
+            votedAt
           }
         }
       }
-      Users(orderBy: ptTokenBalance, orderDirection: desc) {
+      directDemocracyVoting {
         id
-        ptTokenBalance
-        Account {
+        quorumPercentage
+        ddvProposals(orderBy: startTimestamp, orderDirection: desc, first: 50) {
           id
-          userName
-        }
-      }
-    }
-    account(id: $id) {
-      id
-      userName
-    }
-    user(id: $combinedID) {
-      id
-      ptTokenBalance
-      ddTokenBalance
-      totalVotes
-      dateJoined
-      modulesCompleted{
-        id
-        module{
-          id
-        }
-      }
-      memberType {
-        memberTypeName
-        imageURL
-      }
-      tasks {
-        id
-        taskInfo {
-          id
-          name
-          description
-          difficulty
-          estimatedHours
-        }
-        payout
-        completed
-      }
-      ptProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      ddProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      hybridProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-    }
-    perpetualOrganization(id: $poName) {
-      id
-      Users(where: { id: $combinedID }) {
-        id
-        memberType {
-          id
-          memberTypeName
-        }
-      }
-    }
-  }
-`;
-
-
-
-
-export const FETCH_VOTING_DATA = gql`
-  query FetchVotingData($id: String!) {
-    perpetualOrganization(id: $id) {
-      id
-      ParticipationVoting {
-        id
-        proposals {
-          id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          options {
-            id
-            name
-            votes
-          }
-        }
-      }
-      HybridVoting {
-        id
-        proposals {
-          id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          options {
-            id
-            name
-            votes
-          }
-        }
-      }
-      DirectDemocracyVoting {
-        id
-        proposals {
-          id
-          name
-          experationTimestamp
-          creationTimestamp
-          description
-          winningOptionIndex
-          options {
-            id
-            name
-            votes
+          proposalId
+          title
+          descriptionHash
+          numOptions
+          startTimestamp
+          endTimestamp
+          status
+          winningOption
+          isValid
+          isHatRestricted
+          restrictedHatIds
+          votes {
+            voter
+            optionIndexes
+            optionWeights
           }
         }
       }
     }
   }
 `;
-export const FETCH_PROJECT_DATA = gql`
-  query FetchProjectData($id: String!) {
-    perpetualOrganization(id: $id) {
+
+// Fetch projects and tasks data
+export const FETCH_PROJECTS_DATA_NEW = gql`
+  query FetchProjectsDataNew($orgId: Bytes!) {
+    organization(id: $orgId) {
       id
-      TaskManager {
+      taskManager {
         id
-        projects(where: { deleted: false }) {
+        creatorHatIds
+        projects(where: { deleted: false }, first: 50) {
           id
-          name
-          tasks {
+          title
+          metadataHash
+          cap
+          createdAt
+          rolePermissions {
+            hatId
+            canCreate
+            canClaim
+            canReview
+            canAssign
+          }
+          tasks(first: 100) {
             id
-            taskInfo {
-              id
-              name
-              description
-              difficulty
-              estimatedHours
-              location
-              submissionContent
-            }
+            taskId
+            title
+            metadataHash
             payout
-            claimer
-            completed
-            user {
-              id
-              Account {
-                id
-                userName
-              }
+            bountyToken
+            bountyPayout
+            status
+            assignee
+            assigneeUsername
+            completer
+            completerUsername
+            requiresApplication
+            createdAt
+            assignedAt
+            submittedAt
+            completedAt
+            applications {
+              applicant
+              approved
             }
           }
         }
@@ -345,235 +352,315 @@ export const FETCH_PROJECT_DATA = gql`
   }
 `;
 
-
-export const FETCH_PO_DATA = gql`
-  query FetchPODetails($poName: String!) {
-    perpetualOrganization(id: $poName) {
+// Fetch user data within an organization
+export const FETCH_USER_DATA_NEW = gql`
+  query FetchUserDataNew($orgUserID: String!, $userAddress: Bytes!) {
+    user(id: $orgUserID) {
       id
-      logoHash
-      totalMembers
-      aboutInfo {
+      address
+      username
+      participationTokenBalance
+      membershipStatus
+      currentHatIds
+      joinMethod
+      totalTasksCompleted
+      totalVotes
+      totalModulesCompleted
+      firstSeenAt
+      lastActiveAt
+      assignedTasks(first: 20) {
+        id
+        taskId
+        title
+        payout
+        status
+      }
+      completedTasks(first: 20) {
+        id
+        taskId
+        title
+        payout
+      }
+      hybridProposalsCreated(first: 20) {
+        id
+        proposalId
+        title
+        status
+        startTimestamp
+        endTimestamp
+      }
+      modulesCompleted(first: 20) {
+        moduleId
+        completedAt
+      }
+    }
+    account(id: $userAddress) {
+      id
+      username
+    }
+  }
+`;
+
+// Fetch education hub data
+export const FETCH_EDUCATION_DATA = gql`
+  query FetchEducationData($orgId: Bytes!) {
+    organization(id: $orgId) {
+      id
+      educationHub {
+        id
+        modules(first: 50) {
+          id
+          moduleId
+          title
+          contentHash
+          payout
+          status
+          createdAt
+          completions {
+            learner
+            completedAt
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Fetch organization structure data for /org-structure page
+export const FETCH_ORG_STRUCTURE_DATA = gql`
+  query FetchOrgStructureData($orgId: Bytes!) {
+    organization(id: $orgId) {
+      id
+      name
+      metadataHash
+      metadata {
         id
         description
+        template
         links {
-          id
           name
           url
         }
       }
-      TaskManager {
+      deployedAt
+      topHatId
+      roleHatIds
+
+      roles(where: { isUserRole: true }) {
         id
-        activeTaskAmount
-        completedTaskAmount
+        hatId
+        name
+        image
+        canVote
+        isUserRole
+        hat {
+          hatId
+          parentHatId
+          level
+          defaultEligible
+          mintedCount
+          name
+          metadataCID
+          metadataUpdatedAt
+          metadataUpdatedAtBlock
+          wearers {
+            wearer
+            wearerUsername
+            eligible
+            standing
+          }
+          vouchConfig {
+            enabled
+            quorum
+            membershipHatId
+          }
+        }
+        permissions {
+          permissionRole
+          contractType
+          allowed
+        }
+        wearers {
+          wearer
+          wearerUsername
+          isActive
+        }
       }
-      ParticipationToken {
+
+      hybridVoting {
         id
-        supply
+        quorum
       }
-      Treasury {
+
+      directDemocracyVoting {
+        id
+        quorumPercentage
+      }
+
+      hatPermissions {
+        hatId
+        permissionRole
+        contractType
+        allowed
+      }
+
+      users(first: 200) {
+        id
+        address
+        username
+        participationTokenBalance
+        membershipStatus
+        currentHatIds
+        totalTasksCompleted
+        totalVotes
+        firstSeenAt
+        lastActiveAt
+      }
+
+      quickJoin {
         id
       }
-      QuickJoinContract {
+
+      taskManager {
         id
       }
-      HybridVoting {
+
+      educationHub {
         id
       }
-      ParticipationVoting {
+
+      executorContract {
         id
       }
-      DirectDemocracyVoting {
+
+      participationToken {
         id
+        name
+        symbol
+        totalSupply
       }
-      DirectDemocracyToken {
-        id
-      }
-      NFTMembership {
+
+      eligibilityModule {
         id
       }
     }
   }
 `;
 
-
-
-export const FETCH_USER_DETAILS = gql`
-  query FetchUserDetails($id: String!, $poName: String!, $combinedID: String!) {
-    account(id: $id) {
+// Fetch infrastructure contract addresses from the subgraph
+// This replaces hardcoded addresses with dynamic lookups
+// Fetches: PoaManager (with infrastructure proxies), OrgRegistry, UniversalAccountRegistry, and all Beacons
+export const FETCH_INFRASTRUCTURE_ADDRESSES = gql`
+  query FetchInfrastructureAddresses {
+    universalAccountRegistries(first: 1) {
       id
-      userName
+      totalAccounts
     }
-    user(id: $combinedID) {
+    poaManagerContracts(first: 1) {
       id
-      ptTokenBalance
-      ddTokenBalance
-      totalVotes
-      dateJoined
-      memberType {
-        memberTypeName
-        imageURL
-      }
-      tasks {
-        id
-        taskInfo {
-          id
-          name
-          description
-          difficulty
-          estimatedHours
-        }
-        payout
-        completed
-      }
-      ptProposals(orderBy: experationTimestamp, orderDirection: desc){
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      ddProposals(orderBy: experationTimestamp, orderDirection: desc){
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      hybridProposals(orderBy: experationTimestamp, orderDirection: desc){
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
+      registry
+      # Infrastructure proxy addresses (the actual contracts to call)
+      orgDeployerProxy
+      orgRegistryProxy
+      paymasterHubProxy
+      globalAccountRegistryProxy
     }
-    perpetualOrganization(id: $poName) {
+    orgRegistryContracts(first: 1) {
       id
-      NFTMembership {
-        id
-        executiveRoles
-      }
-      Users(where: { id: $combinedID }) {
-        id
-        memberType {
-          id
-          memberTypeName
-        }
-      }
+      totalOrgs
+    }
+    beacons {
+      id
+      typeName
+      beaconAddress
+      currentImplementation
+      version
     }
   }
 `;
 
-export const FETCH_LEADERBOARD = gql`
-  query FetchLeaderboard($id: String!) {
-    perpetualOrganization(id: $id) {
+// ============================================
+// TOKEN REQUEST QUERIES
+// ============================================
+
+// Fetch pending token requests for approvers to review
+export const FETCH_PENDING_TOKEN_REQUESTS = gql`
+  query FetchPendingTokenRequests($tokenAddress: String!) {
+    tokenRequests(
+      where: { participationToken: $tokenAddress, status: Pending }
+      orderBy: createdAt
+      orderDirection: desc
+      first: 100
+    ) {
       id
-      Users(orderBy: ptTokenBalance, orderDirection: desc) {
-        id
-        ptTokenBalance
-      }
+      requestId
+      requester
+      amount
+      ipfsHash
+      status
+      createdAt
+      createdAtBlock
+      transactionHash
     }
   }
 `;
 
-
-
-export const FETCH_PO_AND_USER_DETAILS = gql`
-  query FetchPOAndUserDetails($id: String!, $poName: String!, $combinedID: String!) {
-    account(id: $id) {
+// Fetch a user's own token request history
+export const FETCH_USER_TOKEN_REQUESTS = gql`
+  query FetchUserTokenRequests($tokenAddress: String!, $userAddress: Bytes!) {
+    tokenRequests(
+      where: { participationToken: $tokenAddress, requester: $userAddress }
+      orderBy: createdAt
+      orderDirection: desc
+      first: 50
+    ) {
       id
-      userName
+      requestId
+      amount
+      ipfsHash
+      status
+      createdAt
+      approvedAt
+      cancelledAt
+      approver
+      transactionHash
     }
-    user(id: $combinedID) {
+  }
+`;
+
+// Fetch all token requests for an organization (admin view)
+export const FETCH_ALL_TOKEN_REQUESTS = gql`
+  query FetchAllTokenRequests($tokenAddress: String!) {
+    tokenRequests(
+      where: { participationToken: $tokenAddress }
+      orderBy: createdAt
+      orderDirection: desc
+      first: 100
+    ) {
       id
-      ptTokenBalance
-      ddTokenBalance
-      totalVotes
-      dateJoined
-      memberType {
-        id
-        memberTypeName
-        imageURL
-      }
-      tasks {
-        id
-        taskInfo {
-          id
-          name
-          description
-          difficulty
-          estimatedHours
-        }
-        payout
-        completed
-      }
-      ptProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      ddProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
-      hybridProposals(orderBy: experationTimestamp, orderDirection: desc) {
-        id
-        name
-        experationTimestamp
-        creationTimestamp
-      }
+      requestId
+      requester
+      amount
+      ipfsHash
+      status
+      createdAt
+      approvedAt
+      cancelledAt
+      approver
+      transactionHash
     }
-    perpetualOrganization(id: $poName) {
-      id
-      logoHash
-      totalMembers
-      aboutInfo {
-        id
-        description
-        links {
-          id
-          name
-          url
-        }
-      }
-      TaskManager {
-        id
-        activeTaskAmount
-        completedTaskAmount
-      }
-      ParticipationToken {
-        id
-        supply
-      }
-      Treasury {
-        id
-      }
-      QuickJoinContract {
-        id
-      }
-      HybridVoting {
-        id
-      }
-      ParticipationVoting {
-        id
-      }
-      DirectDemocracyVoting {
-        id
-      }
-      DirectDemocracyToken {
-        id
-      }
-      NFTMembership {
-        id
-        executiveRoles
-      }
-      Users(where: { id: $combinedID }) {
-        id
-        memberType {
-          id
-          memberTypeName
-        }
-      }
+  }
+`;
+
+// Fetch approver hat permissions for a participation token
+export const FETCH_TOKEN_APPROVER_HATS = gql`
+  query FetchTokenApproverHats($tokenAddress: Bytes!) {
+    hatPermissions(
+      where: { contractAddress: $tokenAddress, permissionRole: Approver, allowed: true }
+    ) {
+      hatId
+      permissionRole
+      allowed
     }
   }
 `;

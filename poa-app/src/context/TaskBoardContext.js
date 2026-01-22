@@ -1,7 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/**
+ * TaskBoardContext
+ * Manages task board state with optimistic updates and web3 operations.
+ * Uses the new service layer for blockchain interactions.
+ */
+
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useDataBaseContext } from './dataBaseContext';
-import { useWeb3Context } from './web3Context';
 import { usePOContext } from './POContext';
+import { useIPFScontext } from './ipfsContext';
+import { useRefreshEmit, RefreshEvent } from './RefreshContext';
+import { useNotification } from './NotificationContext';
+import { useWeb3Services } from '../hooks/useWeb3Services';
+import { calculatePayout } from '../util/taskUtils';
 
 const TaskBoardContext = createContext();
 
@@ -17,23 +27,41 @@ export const TaskBoardProvider = ({
   account,
 }) => {
   const [taskColumns, setTaskColumns] = useState(initialColumns);
-  const { getUsernameByAddress, selectedProject } = useDataBaseContext();
-  const {
-    claimTask,
-    updateTask,
-    ipfsAddTask,
-    completeTask,
-    editTaskWeb3,
-    submitTask,
-    deleteTaskWeb3,
-  } = useWeb3Context();
+  const { selectedProject } = useDataBaseContext();
   const { taskManagerContractAddress } = usePOContext();
+  const { addToIpfs } = useIPFScontext();
+  const { emit } = useRefreshEmit();
+  const { addNotification, updateNotification, removeNotification } = useNotification();
+
+  // Get services from the new hook
+  const { task: taskService, isReady } = useWeb3Services({
+    ipfsService: { addToIpfs },
+  });
 
   useEffect(() => {
     setTaskColumns(initialColumns);
   }, [initialColumns]);
 
-  const moveTask = async (
+  /**
+   * Helper to create task IPFS metadata
+   */
+  const createTaskMetadata = useCallback(async (taskName, taskDescription, location, difficulty, estHours, submission) => {
+    const data = {
+      name: taskName,
+      description: taskDescription,
+      location: location,
+      difficulty: difficulty,
+      estHours: estHours,
+      submission: submission,
+    };
+    const result = await addToIpfs(JSON.stringify(data));
+    return result;
+  }, [addToIpfs]);
+
+  /**
+   * Move a task between columns (claim, submit, complete)
+   */
+  const moveTask = useCallback(async (
     draggedTask,
     sourceColumnId,
     destColumnId,
@@ -41,6 +69,11 @@ export const TaskBoardProvider = ({
     submissionData,
     claimedBy
   ) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return;
+    }
+
     // Save previous state to revert in case of error
     const previousTaskColumns = JSON.parse(JSON.stringify(taskColumns));
 
@@ -82,15 +115,33 @@ export const TaskBoardProvider = ({
     // Update the state optimistically
     setTaskColumns(newTaskColumns);
 
+    let notifId = null;
+
     // Perform the Web3 operations asynchronously
     try {
       if (destColumnId === 'inProgress') {
-        await claimTask(taskManagerContractAddress, draggedTask.id);
+        notifId = addNotification('Claiming task...', 'loading');
+        const result = await taskService.claimTask(taskManagerContractAddress, draggedTask.id);
+        if (result.success) {
+          updateNotification(notifId, 'Task claimed successfully!', 'success');
+          emit(RefreshEvent.TASK_CLAIMED, { taskId: draggedTask.id });
+        } else {
+          throw new Error(result.error?.userMessage || 'Failed to claim task');
+        }
       } else if (destColumnId === 'inReview') {
         if (!submissionData) {
           throw new Error('Please enter a submission.');
         }
-        const ipfsHash = await ipfsAddTask(
+        notifId = addNotification('Submitting task...', 'loading');
+
+        console.log('=== moveTask SUBMIT DEBUG ===');
+        console.log('draggedTask:', draggedTask);
+        console.log('draggedTask.id:', draggedTask.id);
+        console.log('draggedTask.taskId:', draggedTask.taskId);
+        console.log('taskManagerContractAddress:', taskManagerContractAddress);
+        console.log('submissionData:', submissionData);
+
+        const ipfsHash = await createTaskMetadata(
           draggedTask.name,
           draggedTask.description,
           'In Review',
@@ -98,43 +149,69 @@ export const TaskBoardProvider = ({
           draggedTask.estHours,
           submissionData
         );
-        const ipfsHashString = ipfsHash.path;
-        await submitTask(taskManagerContractAddress, draggedTask.id, ipfsHashString);
+
+        console.log('IPFS result:', ipfsHash);
+        console.log('IPFS path:', ipfsHash?.path);
+        console.log('=== END moveTask SUBMIT DEBUG ===');
+
+        const result = await taskService.submitTask(
+          taskManagerContractAddress,
+          draggedTask.id,
+          ipfsHash.path
+        );
+        if (result.success) {
+          updateNotification(notifId, 'Task submitted successfully!', 'success');
+          emit(RefreshEvent.TASK_SUBMITTED, { taskId: draggedTask.id });
+        } else {
+          throw new Error(result.error?.userMessage || 'Failed to submit task');
+        }
       } else if (destColumnId === 'completed') {
-        await completeTask(taskManagerContractAddress, draggedTask.id);
+        notifId = addNotification('Completing task...', 'loading');
+        const result = await taskService.completeTask(taskManagerContractAddress, draggedTask.id);
+        if (result.success) {
+          updateNotification(notifId, 'Task completed successfully!', 'success');
+          emit(RefreshEvent.TASK_COMPLETED, { taskId: draggedTask.id });
+        } else {
+          throw new Error(result.error?.userMessage || 'Failed to complete task');
+        }
       }
 
       // Call the onUpdateColumns prop when the columns are updated
       if (onUpdateColumns) {
         onUpdateColumns(newTaskColumns);
       }
-
-
     } catch (error) {
       // Revert the UI changes if there is an error
       console.error('Error moving task:', error);
+      if (notifId) {
+        updateNotification(notifId, error.message || 'Error moving task', 'error');
+      } else {
+        addNotification(error.message || 'Error moving task', 'error');
+      }
       setTaskColumns(previousTaskColumns);
-
-
     }
-  };
+  }, [
+    taskColumns,
+    taskService,
+    taskManagerContractAddress,
+    isReady,
+    addNotification,
+    updateNotification,
+    emit,
+    createTaskMetadata,
+    onUpdateColumns,
+  ]);
 
-  const addTask = async (task, destColumnId) => {
-    // Calculate kubixPayout
-    const calculateKubixPayout = (difficulty, estimatedHours) => {
-      const difficulties = {
-        easy: { baseKubix: 1, multiplier: 16.5 },
-        medium: { baseKubix: 4, multiplier: 24 },
-        hard: { baseKubix: 10, multiplier: 30 },
-        veryHard: { baseKubix: 25, multiplier: 37.5 },
-      };
+  /**
+   * Add a new task
+   */
+  const addTask = useCallback(async (task, destColumnId) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return;
+    }
 
-      const { baseKubix, multiplier } = difficulties[difficulty];
-      const totalKubix = Math.round(baseKubix + multiplier * estimatedHours);
-      return totalKubix;
-    };
-
-    const kubixPayout = calculateKubixPayout(task.difficulty, task.estHours);
+    const kubixPayout = calculatePayout(task.difficulty, task.estHours);
 
     // Save previous state
     const previousTaskColumns = JSON.parse(JSON.stringify(taskColumns));
@@ -155,33 +232,71 @@ export const TaskBoardProvider = ({
 
     setTaskColumns(newTaskColumns);
 
-    try {
-      // Perform Web3 operation asynchronously
-      await ipfsAddTask(
-        taskManagerContractAddress,
-        kubixPayout,
-        task.description,
-        selectedProject.name,
-        task.estHours,
-        task.difficulty,
-        'Open',
-        task.name
-      );
+    const notifId = addNotification('Creating task...', 'loading');
 
-      // Call the onUpdateColumns prop when the columns are updated
-      if (onUpdateColumns) {
-        onUpdateColumns(newTaskColumns);
+    try {
+      const taskData = {
+        payout: kubixPayout,
+        name: task.name,
+        description: task.description,
+        projectId: selectedProject.id,
+        location: 'Open',
+        difficulty: task.difficulty,
+        estHours: task.estHours,
+        bountyToken: task.bountyToken,
+        bountyPayout: task.bountyAmount,
+        requiresApplication: task.requiresApplication || false,
+      };
+
+      let result;
+      if (task.assignTo) {
+        // Create and assign task in one transaction
+        result = await taskService.createAndAssignTask(
+          taskManagerContractAddress,
+          taskData,
+          task.assignTo
+        );
+      } else {
+        // Create task normally
+        result = await taskService.createTask(taskManagerContractAddress, taskData);
       }
 
+      if (result.success) {
+        updateNotification(notifId, task.assignTo ? 'Task created and assigned!' : 'Task created successfully!', 'success');
+        emit(RefreshEvent.TASK_CREATED, { task: newTask });
 
+        if (onUpdateColumns) {
+          onUpdateColumns(newTaskColumns);
+        }
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to create task');
+      }
     } catch (error) {
-      // Revert the UI changes if there is an error
+      console.error('Error adding task:', error);
+      updateNotification(notifId, error.message || 'Error creating task', 'error');
       setTaskColumns(previousTaskColumns);
-
     }
-  };
+  }, [
+    taskColumns,
+    taskService,
+    taskManagerContractAddress,
+    selectedProject,
+    isReady,
+    addNotification,
+    updateNotification,
+    emit,
+    onUpdateColumns,
+  ]);
 
-  const editTask = async (updatedTask, destColumnId, destTaskIndex, projectName) => {
+  /**
+   * Edit an existing task
+   */
+  const editTask = useCallback(async (updatedTask, destColumnId, destTaskIndex, projectName) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return;
+    }
+
     // Save previous state
     const previousTaskColumns = JSON.parse(JSON.stringify(taskColumns));
 
@@ -189,24 +304,11 @@ export const TaskBoardProvider = ({
     const newTaskColumns = [...taskColumns];
     const destColumn = newTaskColumns.find((column) => column.id === destColumnId);
 
-    const calculatePayout = (difficulty, estimatedHours) => {
-      const difficulties = {
-        easy: { base: 1, multiplier: 16.5 },
-        medium: { base: 4, multiplier: 24 },
-        hard: { base: 10, multiplier: 30 },
-        veryHard: { base: 25, multiplier: 37.5 },
-      };
-
-      const { base, multiplier } = difficulties[difficulty];
-      const total = Math.round(base + multiplier * estimatedHours);
-      return total;
-    };
-
-    const Payout = calculatePayout(updatedTask.difficulty, updatedTask.estHours);
+    const payout = calculatePayout(updatedTask.difficulty, updatedTask.estHours);
 
     const newTask = {
       ...updatedTask,
-      Payout: Payout,
+      Payout: payout,
     };
 
     if (destColumn && destColumn.tasks[destTaskIndex]) {
@@ -215,33 +317,55 @@ export const TaskBoardProvider = ({
 
     setTaskColumns(newTaskColumns);
 
+    const notifId = addNotification('Updating task...', 'loading');
+
     try {
-      // Perform Web3 operation asynchronously
-      await editTaskWeb3(
-        taskManagerContractAddress,
-        Payout,
-        updatedTask.description,
-        projectName,
-        updatedTask.estHours,
-        updatedTask.difficulty,
-        'Open',
-        updatedTask.name,
-        updatedTask.id
-      );
+      const result = await taskService.editTask(taskManagerContractAddress, updatedTask.id, {
+        payout,
+        name: updatedTask.name,
+        description: updatedTask.description,
+        location: 'Open',
+        difficulty: updatedTask.difficulty,
+        estHours: updatedTask.estHours,
+        bountyToken: updatedTask.bountyToken,
+        bountyPayout: updatedTask.bountyAmount,
+      });
 
-      if (onUpdateColumns) {
-        onUpdateColumns(newTaskColumns);
+      if (result.success) {
+        updateNotification(notifId, 'Task updated successfully!', 'success');
+        emit(RefreshEvent.TASK_UPDATED, { taskId: updatedTask.id });
+
+        if (onUpdateColumns) {
+          onUpdateColumns(newTaskColumns);
+        }
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to update task');
       }
-
-
     } catch (error) {
-      // Revert the UI changes if there is an error
+      console.error('Error editing task:', error);
+      updateNotification(notifId, error.message || 'Error updating task', 'error');
       setTaskColumns(previousTaskColumns);
-
     }
-  };
+  }, [
+    taskColumns,
+    taskService,
+    taskManagerContractAddress,
+    isReady,
+    addNotification,
+    updateNotification,
+    emit,
+    onUpdateColumns,
+  ]);
 
-  const deleteTask = async (taskId, columnId) => {
+  /**
+   * Delete a task
+   */
+  const deleteTask = useCallback(async (taskId, columnId) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return;
+    }
+
     // Save previous state
     const previousTaskColumns = JSON.parse(JSON.stringify(taskColumns));
 
@@ -257,20 +381,132 @@ export const TaskBoardProvider = ({
 
     setTaskColumns(newTaskColumns);
 
+    const notifId = addNotification('Deleting task...', 'loading');
+
     try {
-      await deleteTaskWeb3(taskManagerContractAddress, taskId);
+      const result = await taskService.cancelTask(taskManagerContractAddress, taskId);
 
-      if (onUpdateColumns) {
-        onUpdateColumns(newTaskColumns);
+      if (result.success) {
+        updateNotification(notifId, 'Task deleted successfully!', 'success');
+        emit(RefreshEvent.TASK_CANCELLED, { taskId });
+
+        if (onUpdateColumns) {
+          onUpdateColumns(newTaskColumns);
+        }
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to delete task');
       }
-
-
     } catch (error) {
-      // Revert the UI changes if there is an error
+      console.error('Error deleting task:', error);
+      updateNotification(notifId, error.message || 'Error deleting task', 'error');
       setTaskColumns(previousTaskColumns);
-
     }
-  };
+  }, [
+    taskColumns,
+    taskService,
+    taskManagerContractAddress,
+    isReady,
+    addNotification,
+    updateNotification,
+    emit,
+    onUpdateColumns,
+  ]);
+
+  /**
+   * Apply for a task that requires application
+   */
+  const applyForTask = useCallback(async (taskId, applicationData) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return { success: false };
+    }
+
+    const notifId = addNotification('Submitting application...', 'loading');
+
+    try {
+      const result = await taskService.applyForTask(
+        taskManagerContractAddress,
+        taskId,
+        applicationData
+      );
+
+      if (result.success) {
+        updateNotification(notifId, 'Application submitted successfully!', 'success');
+        emit(RefreshEvent.TASK_APPLICATION_SUBMITTED, { taskId });
+        return { success: true };
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to submit application');
+      }
+    } catch (error) {
+      console.error('Error applying for task:', error);
+      updateNotification(notifId, error.message || 'Error submitting application', 'error');
+      return { success: false, error };
+    }
+  }, [taskService, taskManagerContractAddress, isReady, addNotification, updateNotification, emit]);
+
+  /**
+   * Approve an application for a task
+   */
+  const approveApplication = useCallback(async (taskId, applicantAddress) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return { success: false };
+    }
+
+    const notifId = addNotification('Approving application...', 'loading');
+
+    try {
+      const result = await taskService.approveApplication(
+        taskManagerContractAddress,
+        taskId,
+        applicantAddress
+      );
+
+      if (result.success) {
+        updateNotification(notifId, 'Application approved successfully!', 'success');
+        emit(RefreshEvent.TASK_APPLICATION_APPROVED, { taskId, applicantAddress });
+        return { success: true };
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to approve application');
+      }
+    } catch (error) {
+      console.error('Error approving application:', error);
+      updateNotification(notifId, error.message || 'Error approving application', 'error');
+      return { success: false, error };
+    }
+  }, [taskService, taskManagerContractAddress, isReady, addNotification, updateNotification, emit]);
+
+  /**
+   * Assign a task to a specific user
+   */
+  const assignTask = useCallback(async (taskId, assigneeAddress) => {
+    if (!isReady || !taskService) {
+      addNotification('Web3 not ready. Please connect your wallet.', 'error');
+      return { success: false };
+    }
+
+    const notifId = addNotification('Assigning task...', 'loading');
+
+    try {
+      const result = await taskService.assignTask(
+        taskManagerContractAddress,
+        taskId,
+        assigneeAddress
+      );
+
+      if (result.success) {
+        updateNotification(notifId, 'Task assigned successfully!', 'success');
+        emit(RefreshEvent.TASK_ASSIGNED, { taskId, assigneeAddress });
+        return { success: true };
+      } else {
+        throw new Error(result.error?.userMessage || 'Failed to assign task');
+      }
+    } catch (error) {
+      console.error('Error assigning task:', error);
+      updateNotification(notifId, error.message || 'Error assigning task', 'error');
+      return { success: false, error };
+    }
+  }, [taskService, taskManagerContractAddress, isReady, addNotification, updateNotification, emit]);
 
   const value = {
     taskColumns,
@@ -279,6 +515,9 @@ export const TaskBoardProvider = ({
     editTask,
     setTaskColumns,
     deleteTask,
+    applyForTask,
+    approveApplication,
+    assignTask,
   };
 
   return (

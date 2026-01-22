@@ -39,14 +39,14 @@ const Leaderboard = () => {
     const { userDAO } = router.query;
     
 
-    const { leaderboardData } = usePOContext();
+    const { leaderboardDisplayData } = usePOContext();
     const [data, setData] = useState([]);
 
     useEffect(() => {
-        if (leaderboardData) {
-            setData(leaderboardData);
+        if (leaderboardDisplayData) {
+            setData(leaderboardDisplayData);
         }
-    }, [leaderboardData]);
+    }, [leaderboardDisplayData]);
 
 
 

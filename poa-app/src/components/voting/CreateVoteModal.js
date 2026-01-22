@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -9,17 +9,28 @@ import {
   ModalFooter,
   Button,
   VStack,
+  HStack,
   FormControl,
   FormLabel,
   Input,
   Textarea,
   Select,
-  HStack,
   Text,
   Box,
   Divider,
+  Alert,
+  AlertIcon,
+  IconButton,
+  Badge,
+  Tooltip,
+  Switch,
+  Checkbox,
+  Wrap,
+  WrapItem,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, DeleteIcon, InfoOutlineIcon } from "@chakra-ui/icons";
+import { useRoleNames } from "@/hooks";
+import SetterActionSelector from "./SetterActionSelector";
 
 const glassLayerStyle = {
   position: "absolute",
@@ -42,13 +53,30 @@ const CreateVoteModal = ({
   handleProposalTypeChange,
   handleTransferAddressChange,
   handleTransferAmountChange,
-  handleTransferOptionChange,
-  handleCandidateChange,
+  handleElectionRoleChange,
   addCandidate,
+  removeCandidate,
+  handleRestrictedToggle,
+  toggleRestrictedRole,
+  handleSetterChange,
   handlePollCreated,
   loadingSubmit,
-  candidateList
+  allProjects = [],
+  roleNames = {},
+  projectNames = {},
 }) => {
+  const { allRoles } = useRoleNames();
+  const [candidateName, setCandidateName] = useState("");
+  const [candidateAddress, setCandidateAddress] = useState("");
+
+  const handleAddCandidate = useCallback(() => {
+    if (candidateName.trim() && candidateAddress.trim()) {
+      addCandidate(candidateName.trim(), candidateAddress.trim());
+      setCandidateName("");
+      setCandidateAddress("");
+    }
+  }, [candidateName, candidateAddress, addCandidate]);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
       <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(10px)" />
@@ -139,9 +167,10 @@ const CreateVoteModal = ({
                 _hover={{ borderColor: "purple.400" }}
                 _focus={{ borderColor: "purple.500", boxShadow: "0 0 0 1px rgba(148, 115, 220, 0.6)" }}
               >
-                <option value="normal">Normal</option>
+                <option value="normal">Normal Vote</option>
+                <option value="election">Election (assign role to winner)</option>
                 <option value="transferFunds">Transfer Funds</option>
-                <option value="election">Election</option>
+                <option value="setter">Change Contract Settings</option>
               </Select>
             </FormControl>
 
@@ -161,12 +190,150 @@ const CreateVoteModal = ({
               </FormControl>
             )}
 
+            {proposal.type === "election" && (
+              <>
+                {/* Role Selection */}
+                <FormControl>
+                  <HStack>
+                    <FormLabel color="white" fontWeight="medium" mb={0}>Role to Assign</FormLabel>
+                    <Tooltip
+                      label="The winning candidate will automatically receive this role"
+                      placement="top"
+                      hasArrow
+                      bg="gray.700"
+                    >
+                      <InfoOutlineIcon boxSize={3} color="gray.400" cursor="help" />
+                    </Tooltip>
+                  </HStack>
+                  <Select
+                    placeholder="Select role"
+                    value={proposal.electionRoleId}
+                    onChange={(e) => handleElectionRoleChange(e.target.value)}
+                    bg="whiteAlpha.100"
+                    border="1px solid rgba(148, 115, 220, 0.3)"
+                    color="white"
+                    mt={2}
+                    _hover={{ borderColor: "purple.400" }}
+                    _focus={{ borderColor: "purple.500", boxShadow: "0 0 0 1px rgba(148, 115, 220, 0.6)" }}
+                  >
+                    {allRoles?.map((role) => (
+                      <option key={role.hatId} value={role.hatId}>
+                        {role.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Add Candidate Form */}
+                <Box
+                  p={4}
+                  bg="rgba(148, 115, 220, 0.1)"
+                  borderRadius="md"
+                  border="1px solid rgba(148, 115, 220, 0.3)"
+                >
+                  <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={3}>
+                    Add Candidates
+                  </Text>
+                  <VStack spacing={3} align="stretch">
+                    <HStack spacing={2}>
+                      <Input
+                        placeholder="Candidate name"
+                        value={candidateName}
+                        onChange={(e) => setCandidateName(e.target.value)}
+                        bg="whiteAlpha.100"
+                        border="1px solid rgba(148, 115, 220, 0.3)"
+                        color="white"
+                        size="sm"
+                        flex="1"
+                        _hover={{ borderColor: "purple.400" }}
+                        _focus={{ borderColor: "purple.500" }}
+                      />
+                      <Input
+                        placeholder="Wallet address (0x...)"
+                        value={candidateAddress}
+                        onChange={(e) => setCandidateAddress(e.target.value)}
+                        bg="whiteAlpha.100"
+                        border="1px solid rgba(148, 115, 220, 0.3)"
+                        color="white"
+                        size="sm"
+                        flex="2"
+                        _hover={{ borderColor: "purple.400" }}
+                        _focus={{ borderColor: "purple.500" }}
+                      />
+                      <IconButton
+                        icon={<AddIcon />}
+                        colorScheme="purple"
+                        size="sm"
+                        onClick={handleAddCandidate}
+                        isDisabled={!candidateName.trim() || !candidateAddress.trim()}
+                        aria-label="Add candidate"
+                      />
+                    </HStack>
+                  </VStack>
+                </Box>
+
+                {/* Candidate List */}
+                {proposal.electionCandidates?.length > 0 && (
+                  <Box
+                    p={4}
+                    bg="rgba(148, 115, 220, 0.05)"
+                    borderRadius="md"
+                    border="1px solid rgba(148, 115, 220, 0.2)"
+                  >
+                    <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={3}>
+                      Candidates ({proposal.electionCandidates.length})
+                    </Text>
+                    <VStack spacing={2} align="stretch">
+                      {proposal.electionCandidates.map((candidate, index) => (
+                        <HStack
+                          key={index}
+                          justify="space-between"
+                          p={2}
+                          bg="whiteAlpha.50"
+                          borderRadius="md"
+                        >
+                          <HStack spacing={2}>
+                            <Badge colorScheme="purple" variant="subtle">
+                              {index + 1}
+                            </Badge>
+                            <VStack align="start" spacing={0}>
+                              <Text fontSize="sm" color="white" fontWeight="medium">
+                                {candidate.name}
+                              </Text>
+                              <Text fontSize="xs" color="gray.400">
+                                {candidate.address.slice(0, 6)}...{candidate.address.slice(-4)}
+                              </Text>
+                            </VStack>
+                          </HStack>
+                          <IconButton
+                            icon={<DeleteIcon />}
+                            size="xs"
+                            colorScheme="red"
+                            variant="ghost"
+                            onClick={() => removeCandidate(index)}
+                            aria-label="Remove candidate"
+                          />
+                        </HStack>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+
+                <Alert status="info" borderRadius="md" bg="rgba(66, 153, 225, 0.15)">
+                  <AlertIcon color="blue.300" />
+                  <Text fontSize="sm" color="gray.300">
+                    When voting ends, the winning candidate will automatically receive the selected role.
+                  </Text>
+                </Alert>
+              </>
+            )}
+
             {proposal.type === "transferFunds" && (
               <>
                 <FormControl>
-                  <FormLabel color="white" fontWeight="medium">Transfer Address</FormLabel>
+                  <FormLabel color="white" fontWeight="medium">Recipient Address</FormLabel>
                   <Input
-                    placeholder="Enter transfer address"
+                    placeholder="0x..."
                     value={proposal.transferAddress}
                     onChange={handleTransferAddressChange}
                     bg="whiteAlpha.100"
@@ -178,11 +345,14 @@ const CreateVoteModal = ({
                 </FormControl>
 
                 <FormControl>
-                  <FormLabel color="white" fontWeight="medium">Transfer Amount</FormLabel>
+                  <FormLabel color="white" fontWeight="medium">Amount (ETH)</FormLabel>
                   <Input
-                    placeholder="Enter amount"
+                    placeholder="Amount in ETH"
                     value={proposal.transferAmount}
                     onChange={handleTransferAmountChange}
+                    type="number"
+                    step="0.001"
+                    min="0"
                     bg="whiteAlpha.100"
                     border="1px solid rgba(148, 115, 220, 0.3)"
                     color="white"
@@ -191,64 +361,96 @@ const CreateVoteModal = ({
                   />
                 </FormControl>
 
-                <FormControl>
-                  <FormLabel color="white" fontWeight="medium">Transfer Option</FormLabel>
-                  <Input
-                    placeholder="Should the amount be transferred? (Yes/No)"
-                    value={proposal.transferOption}
-                    onChange={handleTransferOptionChange}
-                    bg="whiteAlpha.100"
-                    border="1px solid rgba(148, 115, 220, 0.3)"
-                    color="white"
-                    _hover={{ borderColor: "purple.400" }}
-                    _focus={{ borderColor: "purple.500", boxShadow: "0 0 0 1px rgba(148, 115, 220, 0.6)" }}
-                  />
-                </FormControl>
+                <Box
+                  bg="rgba(148, 115, 220, 0.1)"
+                  borderRadius="md"
+                  p={3}
+                  border="1px solid rgba(148, 115, 220, 0.3)"
+                >
+                  <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={2}>
+                    Voting Options:
+                  </Text>
+                  <VStack align="start" spacing={1} pl={2}>
+                    <Text fontSize="sm" color="green.300">✓ Yes - Execute transfer</Text>
+                    <Text fontSize="sm" color="red.300">✗ No - Reject transfer</Text>
+                  </VStack>
+                </Box>
+
+                <Alert status="info" borderRadius="md" bg="rgba(66, 153, 225, 0.15)">
+                  <AlertIcon color="blue.300" />
+                  <Text fontSize="sm" color="gray.300">
+                    This creates a Yes/No vote. If "Yes" wins, the transfer executes automatically from the organization's treasury.
+                  </Text>
+                </Alert>
               </>
             )}
 
-            {proposal.type === "election" && (
-              <>
-                <FormControl>
-                  <FormLabel color="white" fontWeight="medium">Candidates</FormLabel>
-                  <VStack spacing={3} align="stretch">
-                    {candidateList.map((candidate, index) => (
-                      <HStack key={index} spacing={3}>
-                        <Input
-                          placeholder="Candidate Name"
-                          value={candidate.name}
-                          onChange={(e) => handleCandidateChange(index, "name", e.target.value)}
-                          bg="whiteAlpha.100"
-                          border="1px solid rgba(148, 115, 220, 0.3)"
-                          color="white"
-                          _hover={{ borderColor: "purple.400" }}
-                          _focus={{ borderColor: "purple.500", boxShadow: "0 0 0 1px rgba(148, 115, 220, 0.6)" }}
-                        />
-                        <Input
-                          placeholder="Wallet Address"
-                          value={candidate.address}
-                          onChange={(e) => handleCandidateChange(index, "address", e.target.value)}
-                          bg="whiteAlpha.100"
-                          border="1px solid rgba(148, 115, 220, 0.3)"
-                          color="white"
-                          _hover={{ borderColor: "purple.400" }}
-                          _focus={{ borderColor: "purple.500", boxShadow: "0 0 0 1px rgba(148, 115, 220, 0.6)" }}
-                        />
-                      </HStack>
-                    ))}
-                  </VStack>
-                  <Button 
-                    leftIcon={<AddIcon />} 
-                    onClick={addCandidate} 
-                    mt={3} 
-                    size="sm"
-                    colorScheme="purple"
-                    variant="outline"
-                  >
-                    Add Candidate
-                  </Button>
-                </FormControl>
-              </>
+            {proposal.type === "setter" && (
+              <SetterActionSelector
+                proposal={proposal}
+                onChange={handleSetterChange}
+                allRoles={allRoles}
+                allProjects={allProjects}
+                roleNames={roleNames}
+                projectNames={projectNames}
+              />
+            )}
+
+            {/* Voting Restrictions - Available for all proposal types */}
+            <Divider borderColor="rgba(148, 115, 220, 0.2)" />
+
+            <FormControl display="flex" alignItems="center">
+              <HStack flex="1">
+                <FormLabel htmlFor="restricted-voting" mb="0" color="white" fontWeight="medium">
+                  Restrict who can vote
+                </FormLabel>
+                <Tooltip
+                  label="Limit voting to specific roles instead of all members"
+                  placement="top"
+                  hasArrow
+                  bg="gray.700"
+                >
+                  <InfoOutlineIcon boxSize={3} color="gray.400" cursor="help" />
+                </Tooltip>
+              </HStack>
+              <Switch
+                id="restricted-voting"
+                isChecked={proposal.isRestricted}
+                onChange={(e) => handleRestrictedToggle(e.target.checked)}
+                colorScheme="purple"
+              />
+            </FormControl>
+
+            {proposal.isRestricted && (
+              <Box
+                p={4}
+                bg="rgba(148, 115, 220, 0.1)"
+                borderRadius="md"
+                border="1px solid rgba(148, 115, 220, 0.3)"
+              >
+                <Text fontSize="sm" color="gray.300" fontWeight="medium" mb={3}>
+                  Select which roles can vote:
+                </Text>
+                <Wrap spacing={2}>
+                  {allRoles?.map((role) => (
+                    <WrapItem key={role.hatId}>
+                      <Checkbox
+                        isChecked={proposal.restrictedHatIds?.includes(role.hatId)}
+                        onChange={() => toggleRestrictedRole(role.hatId)}
+                        colorScheme="purple"
+                        size="md"
+                      >
+                        <Text fontSize="sm" color="white">{role.name}</Text>
+                      </Checkbox>
+                    </WrapItem>
+                  ))}
+                </Wrap>
+                {proposal.restrictedHatIds?.length === 0 && (
+                  <Text fontSize="xs" color="orange.300" mt={2}>
+                    Please select at least one role
+                  </Text>
+                )}
+              </Box>
             )}
           </VStack>
         </ModalBody>
