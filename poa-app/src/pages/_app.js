@@ -32,8 +32,7 @@ import {
 } from "@tanstack/react-query";
 
 import NetworkModalControl from "@/components/NetworkModalControl";
-import { ApolloProvider } from '@apollo/client';
-import client from '../util//apolloClient';
+import ChainAwareApolloProvider from '../util/ChainAwareApolloProvider';
 import Notification from '@/components/Notifications';
 
 
@@ -67,7 +66,7 @@ const theme = extendTheme({
 function MyApp({ Component, pageProps }) {
   return (
     <WagmiProvider config={config}>
-      <ApolloProvider client={client}>
+      <ChainAwareApolloProvider>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider  initialChain={polygonAmoy}>
           <IPFSprovider>
@@ -95,7 +94,7 @@ function MyApp({ Component, pageProps }) {
           </IPFSprovider>
         </RainbowKitProvider>
       </QueryClientProvider>
-      </ApolloProvider>
+      </ChainAwareApolloProvider>
     </WagmiProvider>
   );
 }
