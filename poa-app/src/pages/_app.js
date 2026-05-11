@@ -25,6 +25,7 @@ import {
   base,
   sepolia,
   polygonAmoy,
+  gnosis,
 } from 'wagmi/chains';
 import {
   QueryClientProvider,
@@ -42,7 +43,13 @@ const queryClient = new QueryClient();
 const config = getDefaultConfig({
   appName: 'Poa',
   projectId: '7dc7409d6ef96f46e91e9d5797e4deac',
-  chains: [polygon, sepolia, polygonAmoy],
+  // Chains list expanded for #517 multi-chain support (paired with the
+  // chainId-aware contract-config in src/util/networks.js + checkNetwork
+  // generalization in web3Context.js). polygonAmoy remains initialChain
+  // because it's the only chain with deployed AccountManager today; the
+  // others surface in RainbowKit so a connected wallet on Arb / Gnosis
+  // can at least browse via the chainId-aware subgraph routing from #460.
+  chains: [polygonAmoy, polygon, sepolia, arbitrum, gnosis],
   ssr: false,
 });
 
