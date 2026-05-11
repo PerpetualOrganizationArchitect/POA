@@ -22,6 +22,8 @@ import { useEthersProvider, useEthersSigner } from '@/components/ProviderConvert
 import { useNotificationContext } from './NotificationContext';
 import { useVotingContext } from './VotingContext';
 
+import { getContractAddress, isSupportedChain } from '../util/networks';
+
 const Web3Context = createContext();
 
 export const useWeb3Context = () => {
@@ -50,14 +52,14 @@ export const Web3Provider = ({ children }) => {
 
     const { addToIpfs, fetchFromIpfs } = useIPFScontext();
 
-    const AccountManagerAddress = "0x2347046e7D8Bde6B6dCF1C493F0c0AC2406be93f";
+    const AccountManagerAddress = getContractAddress('AccountManager', chainId);
 
     const getContractInstance = (contractAddress, contractABI) => {
         return new ethers.Contract(contractAddress, contractABI, signer);
     };
 
     const checkNetwork = () => {
-        if (chainId !== 80002) {
+        if (!isSupportedChain(chainId)) {
             setNetworkModalOpen(true);
             return false;
         }
